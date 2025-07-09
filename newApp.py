@@ -63,9 +63,14 @@ def get_results(ack: Ack, command: dict):
     ts = command.get("text").strip()
     channel_id = command["channel_id"]
     client = WebClient(token=SLACK_BOT_TOKEN)
-
     poll = manager.get_poll(ts)
-    print(poll_text)
+    old_poll_text = poll.formatted_results
+    poll_text = ("*VIEWING PAST RESULTS*\n"
+                 "\n"
+                 f"```{old_poll_text}```\n"
+                 "\n"
+                 "*YOU CANNOT INTERACT WITH THIS POLL.*"
+                 )
     client.chat_postMessage(channel=channel_id, text=poll_text)
 
 @app.event("reaction_added")

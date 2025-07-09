@@ -73,7 +73,7 @@ class Poll:
         return self.total_votes > 0
 
     @property
-    def formatted_results(self) -> str:
+    def formatted_results(self, viewingresults: Optional[bool] = False) -> str:
         lines = []
         emojis = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣"]
         truncated_options = []
@@ -96,14 +96,18 @@ class Poll:
                 truncated_option = option.text
             votes_word = "vote" if votes == 1 else "votes"
             lines.append(
-                f"{emoji} {truncated_option:<{max_option_length}} {bar} ({percentage:.0f}%, {votes} {votes_word})"
+                f"{emoji} {truncated_option:<{max_option_length}} {bar} ({percentage:.0f}%, {votes} {votes_word} )"
             )
         poll_lines = "\n".join(lines)
+        if viewingresults:
+            reaction = ""
+        else:
+            reaction = "Vote by reacting below!"
         return (
             f"*{self.question}* (created by {self.creator})\n"
             f"*Poll ID:* {self.poll_id}\n"
             f"```\n{poll_lines}\n```\n"
-            f"Vote by reacting below!"
+            f"{reaction}"
         )
     def add_vote(self, option_index: int, user_id: str) -> bool:
         if 0 <= option_index < len(self.options):
