@@ -1,10 +1,11 @@
 import os
 import pprint
 import shlex
-from datastructures import *
-from functions import *
+from models import *
+from services import *
+from rendering import *
 from dotenv import load_dotenv
-from slack_bolt import App, Ack, Respond
+from slack_bolt import App, Ack
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk import WebClient
 
@@ -12,8 +13,8 @@ manager = PollManager()
 
 load_dotenv("tokens.env")
 
-SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN").strip()
-SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN").strip()
+SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"].strip()
+SLACK_APP_TOKEN = os.environ["SLACK_APP_TOKEN"].strip()
 
 if not SLACK_BOT_TOKEN:
     raise ValueError("SLACK_BOT_TOKEN not found in environment")
@@ -21,17 +22,18 @@ if not SLACK_APP_TOKEN:
     raise ValueError("SLACK_APP_TOKEN not found in environment")
 
 app = App(token=SLACK_BOT_TOKEN)
+client = WebClient(token=SLACK_BOT_TOKEN)
 
 @app.command("/poll")
 def create_pull(ack: Ack, command: dict):
+    global client
     ack()
     pprint.pprint(command)
-    client = WebClient(token=SLACK_BOT_TOKEN)
     user_name = command['user_name']
     channel_id = command['channel_id']
     poll_text = command['text'].strip()
     parts = shlex.split(poll_text)
-    question, options, anonEnabled, user_name = isAnonymous(parts, user_name)
+    question, options, anon_enabled, user_name = is_anonymous(parts, user_name)
 
     response = client.chat_postMessage(
         channel=channel_id,
@@ -44,13 +46,12 @@ def create_pull(ack: Ack, command: dict):
         options = options,
         creator=user_name,
         channel_id = channel_id,
-        anonymous = anonEnabled
+        anonymous = anon_enabled
     )
-
     client.chat_update(
         channel=channel_id,
         ts=pollID,
-        text=poll.formatted_results
+        text=render_results(poll)
     )
 
     emoji_options_2 = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
@@ -58,19 +59,13 @@ def create_pull(ack: Ack, command: dict):
         client.reactions_add(channel=channel_id, name=emoji_options_2[i], timestamp=pollID)
 @app.command("/results")
 def get_results(ack: Ack, command: dict):
+    global client
     ack()
     pprint.pprint(command)
     ts = command.get("text").strip()
     channel_id = command["channel_id"]
-    client = WebClient(token=SLACK_BOT_TOKEN)
     poll = manager.get_poll(ts)
-    old_poll_text = poll.formatted_results
-    poll_text = ("*VIEWING PAST RESULTS*\n"
-                 "\n"
-                 f"```{old_poll_text}```\n"
-                 "\n"
-                 "*YOU CANNOT INTERACT WITH THIS POLL.*"
-                 )
+    poll_text = render_results(poll, True)
     client.chat_postMessage(channel=channel_id, text=poll_text)
 
 @app.event("reaction_added")
@@ -78,6 +73,9 @@ def handle_reaction_added(event, client, logger):
     ts = event['item']['ts']
     channel = event["item"]["channel"]
     user_id = event["user"]
+    user_info = client.users_info(user=user_id)
+    username = user_info["user"]["profile"]["display_name"]
+
     reaction = event["reaction"]
     poll = manager.get_poll(ts)
 
@@ -90,12 +88,12 @@ def handle_reaction_added(event, client, logger):
     }
 
     option_index = emoji_to_index[reaction]
-    poll.add_vote(option_index, user_id)
+    poll.add_vote(option_index, user_id, username)
 
     client.chat_update(
         channel=channel,
         ts=ts,
-        text=poll.formatted_results
+        text=render_results(poll, False, True)
     )
 
 @app.event("reaction_removed")
@@ -103,6 +101,8 @@ def handle_reaction_removed(event, client, logger):
     ts = event['item']['ts']
     channel = event["item"]["channel"]
     user_id = event["user"]
+    user_info = client.users_info(user=user_id)
+    username = user_info["user"]["profile"]["display_name"]
     reaction = event["reaction"]
     poll = manager.get_poll(ts)
 
@@ -116,12 +116,12 @@ def handle_reaction_removed(event, client, logger):
 
     option_index = emoji_to_index[reaction]
 
-    poll.remove_vote(option_index, user_id)
+    poll.remove_vote(option_index, user_id, username)
 
     client.chat_update(
         channel=channel,
         ts=ts,
-        text=poll.formatted_results
+        text=render_results(poll, False, True)
     )
 if __name__ == "__main__":
     SocketModeHandler(app, SLACK_APP_TOKEN).start()

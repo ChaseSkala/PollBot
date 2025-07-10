@@ -1,15 +1,15 @@
-def isAnonymous(parts, user_name):
+def is_anonymous(parts, user_name):
     if parts[0] == "Anonymous":
-        anonEnabled = True
+        anon_enabled = True
     else:
-        anonEnabled = False
-    if anonEnabled:
+        anon_enabled = False
+    if anon_enabled:
         user_name = "Anonymous"
         question = parts[1]
         options = parts[2:]
     else:
         user_name = user_name
-        anonEnabled = False
+        anon_enabled = False
         question = parts[0]
         options = parts[1:]
-    return question, options, anonEnabled, user_name
+    return question, options, anon_enabled, user_name
