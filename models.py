@@ -26,15 +26,31 @@ class PollOption:
 
 class Poll:
     def __init__(self, poll_id: str, question: str, options: list[str],
-                 creator: str, channel_id: str, anonymous: bool = False):
+                 creator: str, channel_id: str, creation_date: str, anonymous: bool = False, ):
         self.poll_id = poll_id
         self.question = question
         self.creator = creator
         self.channel_id = channel_id
+        self.creation_date = creation_date
         self.anonymous = anonymous
-        self.created_at = datetime.now()
-
         self.options = [PollOption(text=opt) for opt in options]
+        self.winners = []
+
+    @property
+    def winner(self):
+        if not self.options:
+            return None
+
+        max_votes = max(opt.votes for opt in self.options)
+        if max_votes == 0:
+            return "Nobody voted"
+
+        winners = [opt.text for opt in self.options if opt.votes == max_votes]
+
+        if len(winners) == 1:
+            return winners[0]
+        else:
+            return winners
 
     @property
     def total_votes(self) -> int:
@@ -84,23 +100,31 @@ class Poll:
                 return i
         return None
 
+    def __repr__(self):
+        return (f"Poll(poll_id={self.poll_id!r}, question={self.question!r}, "
+                f"options={self.options!r}, creator={self.creator!r}, "
+                f"channel_id={self.channel_id!r}, anonymous={self.anonymous!r})")
+
 
 class PollManager:
     def __init__(self):
         self.polls: dict[str, Poll] = {}
+        self.poll_history: list[Poll] = []
 
     @property
-    def active_polls(self) -> list[Poll]:
-        return [poll for poll in self.polls.values() if poll.is_active]
+    def history(self) -> list[Poll]:
+        return self.poll_history
 
     @property
     def total_polls(self) -> int:
         return len(self.polls)
 
     def create_poll(self, poll_id: float or int, question: str, options: list[str],
-                    creator: str, channel_id: str, anonymous: bool = False) -> Poll:
-        poll = Poll(poll_id, question, options, creator, channel_id, anonymous)
+                    creator: str, channel_id: str, creation_date: str, anonymous: bool = False) -> Poll:
+        poll = Poll(poll_id, question, options, creator, channel_id, creation_date, anonymous)
         self.polls[poll_id] = poll
+        self.poll_history.append(poll)
+
         return poll
 
     def get_poll(self, poll_id: str) -> Optional[Poll]:

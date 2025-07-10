@@ -18,7 +18,10 @@ def render_results(poll, viewing_results: Optional[bool] = False, editing_reacti
         filled = round(percentage / 10)
         empty = 10 - filled
         bar = "⬜" * filled + "⬛" * empty
-        voter_names = ", ".join(option.voters.values())
+        if poll.anonymous:
+            voter_names = "Anonymous"
+        else:
+            voter_names = ", ".join(option.voters.values())
         if len(option.text) > 25:
             truncated_option = option.text[:22] + "..."
         else:
@@ -40,4 +43,15 @@ def render_results(poll, viewing_results: Optional[bool] = False, editing_reacti
         f"*Poll ID:* {poll.poll_id}\n"
         f"```\n{poll_lines}\n```\n"
         f"{reaction}"
+    )
+def render_history(history):
+    lines = []
+    for poll in history:
+        lines.append(
+            f"```Created: {poll.creation_date} \nPoll ID: {poll.poll_id} \nPoll Question:  {poll.question}\nThe winner of the poll was: {poll.winner}```"
+        )
+    poll_lines = "\n".join(lines)
+    return (
+        f"*You are currently viewing the Poll History*\n"
+        f"{poll_lines}"
     )

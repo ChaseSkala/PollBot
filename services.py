@@ -1,3 +1,5 @@
+import datetime
+
 def is_anonymous(parts, user_name):
     if parts[0] == "Anonymous":
         anon_enabled = True
@@ -13,3 +15,10 @@ def is_anonymous(parts, user_name):
         question = parts[0]
         options = parts[1:]
     return question, options, anon_enabled, user_name
+
+def create_id(timestamp):
+    poll_id = str(hash(timestamp))
+    return poll_id
+
+def convert_unix_to_date(timestamp):
+    return datetime.datetime.fromtimestamp(timestamp)

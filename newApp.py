@@ -39,45 +39,62 @@ def create_pull(ack: Ack, command: dict):
         channel=channel_id,
         text="Creating poll..."
     )
-    pollID = response['ts']
+    pollID = create_id(response['ts'])
+    creation_date = convert_unix_to_date(float(response['ts']))
     poll = manager.create_poll(
         poll_id = pollID,
         question = question,
         options = options,
         creator=user_name,
         channel_id = channel_id,
-        anonymous = anon_enabled
+        creation_date=creation_date,
+        anonymous = anon_enabled,
     )
     client.chat_update(
         channel=channel_id,
-        ts=pollID,
+        ts=response['ts'],
         text=render_results(poll)
     )
 
     emoji_options_2 = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
     for i in range(len(options)):
-        client.reactions_add(channel=channel_id, name=emoji_options_2[i], timestamp=pollID)
+        client.reactions_add(channel=channel_id, name=emoji_options_2[i], timestamp=response['ts'])
 @app.command("/results")
 def get_results(ack: Ack, command: dict):
     global client
     ack()
     pprint.pprint(command)
     ts = command.get("text").strip()
-    channel_id = command["channel_id"]
     poll = manager.get_poll(ts)
     poll_text = render_results(poll, True)
+    channel_id = command["channel_id"]
     client.chat_postMessage(channel=channel_id, text=poll_text)
+
+@app.command("/history")
+def get_history(ack: Ack, command: dict):
+    global client
+    ack()
+    pprint.pprint(command)
+    ts = command.get("text").strip()
+    channel_id = command["channel_id"]
+    poll_text = render_history(manager.history)
+    client.chat_postMessage(
+        channel=channel_id,
+        text=poll_text,
+    )
 
 @app.event("reaction_added")
 def handle_reaction_added(event, client, logger):
+    pprint.pprint(event)
     ts = event['item']['ts']
+    poll_id = create_id(ts)
     channel = event["item"]["channel"]
     user_id = event["user"]
     user_info = client.users_info(user=user_id)
     username = user_info["user"]["profile"]["display_name"]
 
     reaction = event["reaction"]
-    poll = manager.get_poll(ts)
+    poll = manager.get_poll(poll_id)
 
     if not poll:
         raise Exception("Poll not found")
@@ -99,12 +116,13 @@ def handle_reaction_added(event, client, logger):
 @app.event("reaction_removed")
 def handle_reaction_removed(event, client, logger):
     ts = event['item']['ts']
+    poll_id = create_id(ts)
     channel = event["item"]["channel"]
     user_id = event["user"]
     user_info = client.users_info(user=user_id)
     username = user_info["user"]["profile"]["display_name"]
     reaction = event["reaction"]
-    poll = manager.get_poll(ts)
+    poll = manager.get_poll(poll_id)
 
     if not poll:
         raise Exception("Poll not found")
