@@ -7,10 +7,10 @@ def render_results(poll, viewing_results: Optional[bool] = False, editing_reacti
     truncated_options = []
     for option in poll.options:
         if len(option.text) > 25:
-            truncated_options.append(option[:22] + "...")
+            truncated_options.append(option.text[:22] + "...")
         else:
-            truncated_options.append(option)
-    max_option_length = max(len(opt.text) for opt in truncated_options)
+            truncated_options.append(option.text)
+    max_option_length = max(len(opt) for opt in truncated_options)
     for i, option in enumerate(poll.options):
         emoji = emojis[i] if i < len(emojis) else "🔸"
         votes = option.votes
@@ -25,7 +25,7 @@ def render_results(poll, viewing_results: Optional[bool] = False, editing_reacti
             truncated_option = option.text
         votes_word = "vote" if votes == 1 else "votes"
         lines.append(
-            f"{emoji} {truncated_option:<{max_option_length}} {bar} ({percentage:.0f}%, {votes} {votes_word} {voter_names})"
+            f"{emoji} {truncated_option:<{max_option_length}} {bar} ({percentage:.0f}%, {votes} {votes_word}, {voter_names})"
         )
     poll_lines = "\n".join(lines)
     if viewing_results:
