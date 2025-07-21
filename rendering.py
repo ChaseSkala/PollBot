@@ -1,4 +1,4 @@
-def render_results(poll):
+def render_multiple_choice(poll):
     button_elements = []
     blocks = [
         {
@@ -25,7 +25,7 @@ def render_results(poll):
                 {
                     "text": {
                         "type": "plain_text",
-                        "text": option.text,
+                        "text": option.text if hasattr(option, 'text') else str(option),
                         "emoji": True
                     },
                     "value": str(i)
@@ -46,13 +46,23 @@ def render_results(poll):
                 "type": "button",
                 "text": {
                     "type": "plain_text",
-                    "text": option.text,
+                    "text": option.text if hasattr(option, 'text') else str(option),
                     "emoji": True
                 },
                 "value": f"option_{i}",
                 "action_id": f"actionId-{i}"
             })
-
+        if poll.can_add_choices:
+            button_elements.append({
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "+ Add Option",
+                    "emoji": True
+                },
+                "value": "add-option",
+                "action_id": "add-option"
+            })
         blocks.append({
             "type": "actions",
             "elements": button_elements
@@ -92,9 +102,69 @@ def render_results(poll):
 
     return blocks
 
+def render_open_ended(poll):
+    button_elements = []
+    blocks = [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": f"{poll.question}",
+                "emoji": True
+            }
+        }
+    ]
 
-def render_options(poll, user_id):
-    blocks = render_results(poll)
+    button_elements.append({
+        "type": "button",
+        "text": {
+            "type": "plain_text",
+            "text": "Add Response",
+            "emoji": True
+        },
+        "value": "add-option",
+        "action_id": "add-option"
+    })
+    blocks.append({
+        "type": "actions",
+        "elements": button_elements
+    })
+    if poll.anonymous:
+        blocks.append({
+            "type": "context",
+            "elements": [
+                {
+                    "type": "plain_text",
+                    "text": f"Sender: {poll.creator} | Responses: Anonymous",
+                    "emoji": True
+                }
+            ]
+        })
+    else:
+        blocks.append({
+            "type": "context",
+            "elements": [
+                {
+                    "type": "plain_text",
+                    "text": f"Sender: {poll.creator} | Responses: Non-Anonymous",
+                    "emoji": True
+                }
+            ]
+        })
+    blocks.append({
+        "type": "context",
+        "elements": [
+            {
+                "type": "plain_text",
+                "text": f"PollID: {poll.poll_id}",
+                "emoji": True
+            }
+        ]
+    })
+    return blocks
+
+def render_multiple_choice_options(poll):
+    blocks = render_multiple_choice(poll)
     fields = []
 
     for i, option in enumerate(poll.options):
@@ -104,7 +174,7 @@ def render_options(poll, user_id):
         percentage = poll.percentages[i]
         poll_percentage = round(percentage)
         filled = round(percentage / 5)
-        empty = 20 - filled
+        empty = 30 - filled
         bar = "█" * filled + " " * empty
         label = f"*{option.text}*"
         bar_text = f"`{bar}` |  {poll_percentage}% ({option.votes})"
@@ -118,7 +188,6 @@ def render_options(poll, user_id):
             "type": "mrkdwn",
             "text": field_text
         })
-
     if fields:
         blocks.append({
             "type": "section",
@@ -137,12 +206,127 @@ def render_options(poll, user_id):
 						"emoji": True
 					},
 					"value": "click_me_123",
-					"action_id": "Results"
+					"action_id": "results"
 				}
 			]
 		})
     return blocks
 
+
+def render_open_ended_options(poll):
+    button_elements = []
+    response_total = 0
+    blocks = [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": f"{poll.question}",
+                "emoji": True
+            }
+        }
+    ]
+
+    fields = []
+
+    for i, option in enumerate(poll.options):
+
+        if option.text == 'Add your responses!':
+            continue
+        if response_total >= 8:
+            response_total = response_total + 1
+            continue
+        if not poll.anonymous:
+            user_id = str(next(iter(option.voters.keys())))
+            response_creator = f"<@{user_id}>"
+        else:
+            response_creator = f"Anonymous"
+        label = f"*Response {i}*"
+        response_text = f":speech_balloon: {response_creator}: _{option.text}_"
+
+        field_text = f"{label}\n{response_text}"
+
+        fields.append({
+            "type": "mrkdwn",
+            "text": field_text
+        })
+
+        response_total = response_total + 1
+
+    blocks.append({
+        "type": "header",
+        "text": {
+            "type": "plain_text",
+            "text": f"Responses({response_total})",
+            "emoji": True
+        }
+    })
+
+    if fields:
+        blocks.append({
+            "type": "section",
+            "fields": fields
+        })
+
+        blocks.append({"type": "divider"})
+
+    button_elements.append({
+        "type": "button",
+        "text": {
+            "type": "plain_text",
+            "text": "Add Response",
+            "emoji": True
+        },
+        "value": "add-option",
+        "action_id": "add-option"
+    })
+    button_elements.append({
+        "type": "button",
+        "text": {
+            "type": "plain_text",
+            "text": "View All Responses",
+            "emoji": True
+        },
+        "value": "view-all-open-ended",
+        "action_id": "view-all-open-ended"
+    })
+    blocks.append({
+        "type": "actions",
+        "elements": button_elements
+    })
+    if poll.anonymous:
+        blocks.append({
+            "type": "context",
+            "elements": [
+                {
+                    "type": "plain_text",
+                    "text": f"Sender: {poll.creator} | Responses: Anonymous",
+                    "emoji": True
+                }
+            ]
+        })
+    else:
+        blocks.append({
+            "type": "context",
+            "elements": [
+                {
+                    "type": "plain_text",
+                    "text": f"Sender: {poll.creator} | Responses: Non-Anonymous",
+                    "emoji": True
+                }
+            ]
+        })
+    blocks.append({
+        "type": "context",
+        "elements": [
+            {
+                "type": "plain_text",
+                "text": f"PollID: {poll.poll_id}",
+                "emoji": True
+            }
+        ]
+    })
+    return blocks
 
 def render_history(history):
     lines = []

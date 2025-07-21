@@ -1,17 +1,15 @@
 import os
 import logging
 import re
-
+import pprint
 from models import *
 from services import *
 from rendering import *
-from actions.createPoll import *
+from actions.modals import *
 from dotenv import load_dotenv
 from slack_bolt import App, Ack
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk import WebClient
-from slack_sdk.models.blocks import SectionBlock, ActionsBlock
-from slack_sdk.models.blocks.block_elements import ButtonElement
 
 logger = logging.getLogger(__name__)
 
@@ -31,19 +29,130 @@ app = App(token=SLACK_BOT_TOKEN)
 client = WebClient(token=SLACK_BOT_TOKEN)
 
 @app.command("/poll")
-def send_ui(ack: Ack, command: dict):
+def handle_poll_command(ack: Ack, command: dict):
     global client
     ack()
-    modal = create_poll()
+    modal = create_home_menu()
     modal["private_metadata"] = command["channel_id"]
     client.views_open(
         trigger_id=command["trigger_id"],
         view=modal,
     )
-    logger.info("poll")
 
-@app.view("poll")
-def create_pull(ack: Ack, body, view, client, logger):
+@app.action("open-ended")
+def handle_open_ended(ack: Ack, body:dict):
+    global client
+    ack()
+    modal = create_open_ended()
+    modal["private_metadata"] = body["view"]["private_metadata"]
+    client.views_update(
+        view_id=body["view"]["id"],
+        view=modal,
+    )
+
+@app.action("multiple-choice")
+def handle_multiple_choice(ack: Ack, body: dict):
+    global client
+    ack()
+    modal = create_multiple_choice()
+    modal["private_metadata"] = body["view"]["private_metadata"]
+    client.views_update(
+        view_id=body["view"]["id"],
+        view=modal,
+    )
+
+@app.action("add-option")
+def handle_choice_added(ack: Ack, body: dict):
+    global client
+    pprint.pprint(body)
+    ack()
+    channel = body['channel']['id']
+    ts = body['message']['ts']
+    modal = create_add_choices()
+    modal["private_metadata"] = f"{channel}|{ts}"
+    client.views_open(
+        trigger_id=body["trigger_id"],
+        view=modal,
+    )
+
+@app.view("adding-option")
+def handle_add_option_added(ack: Ack, body: dict, view: dict):
+    global client
+    ack()
+
+    channel, ts = body['view']['private_metadata'].split('|')
+    poll_id = create_id(ts)
+    poll = manager.get_poll(poll_id)
+    user_input = body['view']['state']['values']['add_choice_block']['choice-added']['value']
+    user_id = body['user']['id']
+    user_info = client.users_info(user=user_id)
+    user_name = user_info["user"]["name"]
+    poll.options.append(PollOption(text=user_input, votes=1, voters={user_id: user_name}))
+    if poll.options[0].text == 'Add your responses!':
+        blocks = render_open_ended_options(poll)
+    else:
+        blocks = render_multiple_choice_options(poll)
+    client.chat_update(
+        channel=channel,
+        ts=ts,
+        text="Poll update",
+        blocks=blocks
+    )
+
+@app.view("open-ended")
+def create_open_ended_poll(ack: Ack, body, view, client, logger):
+    ack()
+    values = view["state"]["values"]
+    question = None
+
+    for block_id, block_data in values.items():
+        if "question_input" in block_data:
+            question = block_data["question_input"]["value"]
+    if not question:
+        logger.error("Missing question or choices!")
+        return
+    logger.info(f"Question: {question}")
+
+    channel_id = view.get("private_metadata")
+    user_id = body["user"]["id"]
+    user_info = client.users_info(user=user_id)
+    user_name = user_info["user"]["name"]
+
+    anon_enabled = False
+    can_add_choices = False
+    for block_id, block_data in values.items():
+        if "checkboxes-action" in block_data:
+            selected = block_data["checkboxes-action"].get("selected_options", [])
+            if selected and selected[0]["value"] == "anonymous":
+                anon_enabled = True
+
+    response = client.chat_postMessage(
+        channel=channel_id,
+        text="Creating poll..."
+    )
+
+    pollID = create_id(response['ts'])
+    creation_date = convert_unix_to_date(float(response['ts']))
+    poll = manager.create_poll(
+        poll_id=pollID,
+        question=question,
+        options=['Add your responses!'],
+        creator=user_name,
+        channel_id=channel_id,
+        creation_date=creation_date,
+        anonymous=anon_enabled,
+        can_add_choices=True,
+    )
+    client.chat_update(
+        channel=channel_id,
+        ts=response['ts'],
+        text="Created OE Poll",
+        blocks=render_open_ended(poll)
+    )
+
+
+@app.view("multiple-choice")
+def create_multiple_choice_poll(ack: Ack, body, view, client, logger):
     ack()
     values = view["state"]["values"]
     question = None
@@ -59,7 +168,8 @@ def create_pull(ack: Ack, body, view, client, logger):
     if not question or not choices:
         logger.error("Missing question or choices!")
         return
-
+    pprint.pprint(choices)
+    pprint.pprint(options)
     logger.info(f"Question: {question}")
     logger.info(f"Options: {options}")
 
@@ -69,11 +179,14 @@ def create_pull(ack: Ack, body, view, client, logger):
     user_name = user_info["user"]["name"]
 
     anon_enabled = False
+    can_add_choices = False
     for block_id, block_data in values.items():
         if "checkboxes-action" in block_data:
             selected = block_data["checkboxes-action"].get("selected_options", [])
             if selected and selected[0]["value"] == "anonymous":
                 anon_enabled = True
+            if selected and selected[0]["value"] == "can-users-add-new-choices":
+                can_add_choices = True
 
     response = client.chat_postMessage(
         channel=channel_id,
@@ -90,21 +203,14 @@ def create_pull(ack: Ack, body, view, client, logger):
         channel_id = channel_id,
         creation_date=creation_date,
         anonymous = anon_enabled,
+        can_add_choices = can_add_choices,
     )
     client.chat_update(
         channel=channel_id,
         ts=response['ts'],
-        blocks=render_results(poll)
+        text="Created MC Poll",
+        blocks=render_multiple_choice(poll)
     )
-
-@app.command("/results")
-def get_results(ack: Ack, command: dict):
-    global client
-    ack()
-    ts = command.get("text").strip()
-    poll = manager.get_poll(ts)
-    channel_id = command["channel_id"]
-    client.chat_postMessage(channel=channel_id, blocks=render_results(poll))
 
 @app.command("/history")
 def get_history(ack: Ack, command: dict):
@@ -139,12 +245,15 @@ def handle_vote(ack: Ack, body, action, logger):
         poll.remove_vote(index, user_id, username)
     else:
         poll.add_vote(index, user_id, username)
-
+    if poll.options[0].text == 'Add your responses!':
+        blocks = render_open_ended_options(poll)
+    else:
+        blocks = render_multiple_choice_options(poll)
     client.chat_update(
         channel=channel,
         ts=ts,
         text="Poll update",
-        blocks=render_options(poll, user_id)
+        blocks=blocks
     )
 
 @app.action("poll_option_select")
@@ -167,13 +276,48 @@ def handle_dropdown_vote(ack: Ack, body, action, logger):
         poll.remove_vote(index, user_id, username)
     else:
         poll.add_vote(index, user_id, username)
-
+    if poll.options[0].text == 'Add your responses!':
+        blocks = render_open_ended_options(poll)
+    else:
+        blocks = render_multiple_choice_options(poll)
     client.chat_update(
         channel=channel,
         ts=ts,
         text="Poll update",
-        blocks=render_options(poll, user_id)
+        blocks=blocks
     )
+
+@app.action("results")
+def handle_results(ack: Ack, body, action, logger):
+    global client
+    ack()
+    ts = body['message']['ts']
+    channel = body['channel']['id']
+    poll_id = create_id(ts)
+    poll = manager.get_poll(poll_id)
+    modal = all_results(poll, channel)
+    modal["private_metadata"] = channel
+    client.views_open(
+        trigger_id=body["trigger_id"],
+        view=modal,
+    )
+    logger.info("results")
+
+@app.action("view-all-open-ended")
+def handle_view_all_open_ended(ack: Ack, body, action, logger):
+    global client
+    ack()
+    ts = body['message']['ts']
+    channel = body['channel']['id']
+    poll_id = create_id(ts)
+    poll = manager.get_poll(poll_id)
+    modal = all_open_ended(poll, channel)
+    modal["private_metadata"] = channel
+    client.views_open(
+        trigger_id=body["trigger_id"],
+        view=modal,
+    )
+    logger.info("view-all-open-ended")
 
 
 
