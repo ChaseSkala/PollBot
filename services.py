@@ -22,3 +22,10 @@ def create_id(timestamp):
 
 def convert_unix_to_date(timestamp):
     return datetime.datetime.fromtimestamp(timestamp)
+
+def change_response(response_num, new_response, poll):
+    if new_response == 'REMOVE':
+        del poll.options[response_num]
+    else:
+        poll.options[response_num].text = new_response
+    return "error"

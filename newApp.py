@@ -245,6 +245,7 @@ def handle_vote(ack: Ack, body, action, logger):
         poll.remove_vote(index, user_id, username)
     else:
         poll.add_vote(index, user_id, username)
+
     if poll.options[0].text == 'Add your responses!':
         blocks = render_open_ended_options(poll)
     else:
@@ -319,7 +320,89 @@ def handle_view_all_open_ended(ack: Ack, body, action, logger):
     )
     logger.info("view-all-open-ended")
 
+@app.action("edit-response")
+def handle_edit_response(ack: Ack, body, action, logger):
+    global client
+    ack()
+    ts = body['message']['ts']
+    channel = body['channel']['id']
+    modal = which_response_to_edit(ts, channel)
+    client.views_open(
+        trigger_id=body["trigger_id"],
+        view=modal,
+    )
+    logger.info("view-all-open-ended")
 
+@app.view("editing-response")
+def handle_editing_response(ack: Ack, body, view, action, logger):
+    global client
+    ack()
+    private_metadata = view.get("private_metadata", "")
+    metadata = json.loads(private_metadata) if private_metadata else {}
+    ts = metadata.get("ts")
+    channel = metadata.get("channel")
+    values = view["state"]["values"]
+    poll_id = create_id(ts)
+    poll = manager.get_poll(poll_id)
+    user_id = body["user"]["id"]
+    for block_id, block_data in values.items():
+        if "which-response-to-edit" in block_data:
+            response_num = block_data["which-response-to-edit"]["value"]
+        else:
+            print("No response num to edit")
+
+    response_num = int(response_num)
+    for i, response in enumerate(poll.options):
+        if i == int(response_num):
+            if response.check_user(user_id, response_num):
+                allowed = True
+                modal = editing_response(allowed, ts, channel, response_num)
+                client.views_open(
+                    trigger_id=body["trigger_id"],
+                    view=modal,
+                )
+                logger.info("view-all-open-ended")
+            else:
+                allowed = False
+                modal = editing_response(allowed, ts, channel, response_num)
+                client.views_open(
+                    trigger_id=body["trigger_id"],
+                    view=modal,
+                )
+                logger.info("view-all-open-ended")
+        else:
+            continue
+
+@app.view("submit-edit-response")
+def handle_response_change(ack: Ack, body, view, action, logger):
+    global client
+    ack()
+    private_metadata = view.get("private_metadata", "")
+    metadata = json.loads(private_metadata) if private_metadata else {}
+    ts = metadata.get("ts")
+    channel = metadata.get("channel")
+    response_num = metadata.get("response_num")
+    values = view["state"]["values"]
+    poll_id = create_id(ts)
+    poll = manager.get_poll(poll_id)
+
+    for block_id, block_data in values.items():
+        if "new-response" in block_data:
+            new_response = block_data["new-response"]["value"]
+        else:
+            print("No response num to edit")
+
+
+
+    change_response(response_num, new_response, poll)
+
+    blocks = render_open_ended_options(poll)
+    client.chat_update(
+        channel=channel,
+        ts=ts,
+        text="Poll update",
+        blocks=blocks
+    )
 
 if __name__ == "__main__":
     SocketModeHandler(app, SLACK_APP_TOKEN).start()

@@ -184,6 +184,7 @@ def render_multiple_choice_options(poll):
             voter_mentions = ", ".join(f"<@{uid}>" for uid in option.voters.keys())
             field_text += f"\n_{voter_mentions}_"
 
+
         fields.append({
             "type": "mrkdwn",
             "text": field_text
@@ -236,8 +237,13 @@ def render_open_ended_options(poll):
         if response_total >= 8:
             response_total = response_total + 1
             continue
+
+        user_id = str(next(iter(option.voters.keys())))
+
+        if i not in option.response_user_ids:
+            poll.options[i].add_user(user_id, i)
+
         if not poll.anonymous:
-            user_id = str(next(iter(option.voters.keys())))
             response_creator = f"<@{user_id}>"
         else:
             response_creator = f"Anonymous"
@@ -279,6 +285,16 @@ def render_open_ended_options(poll):
         },
         "value": "add-option",
         "action_id": "add-option"
+    })
+    button_elements.append({
+        "type": "button",
+        "text": {
+            "type": "plain_text",
+            "text": "Edit/Remove Response",
+            "emoji": True
+        },
+        "value": "edit-response",
+        "action_id": "edit-response"
     })
     button_elements.append({
         "type": "button",

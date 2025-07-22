@@ -7,6 +7,7 @@ class PollOption:
     text: str
     votes: int = 0
     voters: dict[str, str] = field(default_factory=dict)
+    response_user_ids: dict[int, int] = field(default_factory=dict)
 
     def add_vote(self, user_id: str, username: str) -> bool:
         if user_id not in self.voters:
@@ -22,6 +23,15 @@ class PollOption:
             return True
         return False
 
+    def add_user(self, user_id: int, response_num: int) -> None:
+        if user_id not in self.response_user_ids:
+            self.response_user_ids[response_num] = user_id
+
+    def check_user(self, user_id: int, response_num: int) -> bool:
+        if response_num in self.response_user_ids:
+            if self.response_user_ids[response_num] == user_id:
+                return True
+        return False
 
 class Poll:
     def __init__(self, poll_id: str, question: str, options: list[str],
