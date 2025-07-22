@@ -29,3 +29,12 @@ def change_response(response_num, new_response, poll):
     else:
         poll.options[response_num].text = new_response
     return "error"
+
+def can_add_more_options(poll, user_id, max_responses_count):
+    if user_id not in poll.user_option_count:
+        poll.user_option_count[user_id] = 1
+        return True
+    if poll.user_option_count[user_id] >= int(max_responses_count) + 1:
+        return False
+    else:
+        return True

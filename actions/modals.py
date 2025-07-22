@@ -193,7 +193,19 @@ def create_open_ended():
 					}
 				],
 				"action_id": "checkboxes-action"
-			}
+			},
+        },
+        {
+            "type": "input",
+            "element": {
+                "type": "plain_text_input",
+                "action_id": "max-options"
+            },
+            "label": {
+                "type": "plain_text",
+                "text": "Max amount of options per person. (Put 999 for no limit.)",
+                "emoji": True
+            }
 		}
 	]
 }

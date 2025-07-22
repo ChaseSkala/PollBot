@@ -27,7 +27,7 @@ if not SLACK_APP_TOKEN:
 
 app = App(token=SLACK_BOT_TOKEN)
 client = WebClient(token=SLACK_BOT_TOKEN)
-
+max_responses_count = 0
 @app.command("/poll")
 def handle_poll_command(ack: Ack, command: dict):
     global client
@@ -78,6 +78,7 @@ def handle_choice_added(ack: Ack, body: dict):
 @app.view("adding-option")
 def handle_add_option_added(ack: Ack, body: dict, view: dict):
     global client
+    global max_responses_count
     ack()
 
     channel, ts = body['view']['private_metadata'].split('|')
@@ -87,20 +88,31 @@ def handle_add_option_added(ack: Ack, body: dict, view: dict):
     user_id = body['user']['id']
     user_info = client.users_info(user=user_id)
     user_name = user_info["user"]["name"]
-    poll.options.append(PollOption(text=user_input, votes=1, voters={user_id: user_name}))
-    if poll.options[0].text == 'Add your responses!':
-        blocks = render_open_ended_options(poll)
+    if can_add_more_options(poll, user_id, max_responses_count):
+        poll.options.append(PollOption(text=user_input, votes=1, voters={user_id: user_name}))
+        response_num = len(poll.options)
+        poll.options[-1].add_user(user_id, response_num)
+        if poll.options[0].text == 'Add your responses!':
+            blocks = render_open_ended_options(poll)
+        else:
+            blocks = render_multiple_choice_options(poll)
+        client.chat_update(
+            channel=channel,
+            ts=ts,
+            text="Poll update",
+            blocks=blocks
+        )
+        poll.user_option_count[user_id] += 1
     else:
-        blocks = render_multiple_choice_options(poll)
-    client.chat_update(
-        channel=channel,
-        ts=ts,
-        text="Poll update",
-        blocks=blocks
-    )
+        client.chat_postEphemeral(
+            channel=channel,
+            user=user_id,
+            text=f"You cannot add any more options!",
+        )
 
 @app.view("open-ended")
 def create_open_ended_poll(ack: Ack, body, view, client, logger):
+    global max_responses_count
     ack()
     values = view["state"]["values"]
     question = None
@@ -117,7 +129,12 @@ def create_open_ended_poll(ack: Ack, body, view, client, logger):
     user_id = body["user"]["id"]
     user_info = client.users_info(user=user_id)
     user_name = user_info["user"]["name"]
-
+    values = view["state"]["values"]
+    for block_id, block_data in values.items():
+        if "max-options" in block_data:
+            max_responses_count = block_data["max-options"]["value"]
+        else:
+            print("No response num to edit")
     anon_enabled = False
     can_add_choices = False
     for block_id, block_data in values.items():

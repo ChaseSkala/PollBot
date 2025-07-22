@@ -45,6 +45,7 @@ class Poll:
         self.can_add_choices = can_add_choices
         self.options = [PollOption(text=opt) for opt in options]
         self.winners = []
+        self.user_option_count = {}
 
     @property
     def winner(self):
