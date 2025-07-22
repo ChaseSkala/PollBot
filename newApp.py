@@ -27,7 +27,6 @@ if not SLACK_APP_TOKEN:
 
 app = App(token=SLACK_BOT_TOKEN)
 client = WebClient(token=SLACK_BOT_TOKEN)
-max_responses_count = 0
 @app.command("/poll")
 def handle_poll_command(ack: Ack, command: dict):
     global client
@@ -78,7 +77,6 @@ def handle_choice_added(ack: Ack, body: dict):
 @app.view("adding-option")
 def handle_add_option_added(ack: Ack, body: dict, view: dict):
     global client
-    global max_responses_count
     ack()
 
     channel, ts = body['view']['private_metadata'].split('|')
@@ -88,7 +86,7 @@ def handle_add_option_added(ack: Ack, body: dict, view: dict):
     user_id = body['user']['id']
     user_info = client.users_info(user=user_id)
     user_name = user_info["user"]["name"]
-    if can_add_more_options(poll, user_id, max_responses_count):
+    if can_add_more_options(poll, user_id):
         poll.options.append(PollOption(text=user_input, votes=1, voters={user_id: user_name}))
         response_num = len(poll.options)
         poll.options[-1].add_user(user_id, response_num)
@@ -112,7 +110,6 @@ def handle_add_option_added(ack: Ack, body: dict, view: dict):
 
 @app.view("open-ended")
 def create_open_ended_poll(ack: Ack, body, view, client, logger):
-    global max_responses_count
     ack()
     values = view["state"]["values"]
     question = None
@@ -124,12 +121,6 @@ def create_open_ended_poll(ack: Ack, body, view, client, logger):
         logger.error("Missing question or choices!")
         return
     logger.info(f"Question: {question}")
-
-    channel_id = view.get("private_metadata")
-    user_id = body["user"]["id"]
-    user_info = client.users_info(user=user_id)
-    user_name = user_info["user"]["name"]
-    values = view["state"]["values"]
     for block_id, block_data in values.items():
         if "max-options" in block_data:
             max_responses_count = block_data["max-options"]["value"]
@@ -142,6 +133,12 @@ def create_open_ended_poll(ack: Ack, body, view, client, logger):
             selected = block_data["checkboxes-action"].get("selected_options", [])
             if selected and selected[0]["value"] == "anonymous":
                 anon_enabled = True
+    channel_id = view.get("private_metadata")
+    user_id = body["user"]["id"]
+    user_info = client.users_info(user=user_id)
+    user_name = user_info["user"]["name"]
+
+
 
     response = client.chat_postMessage(
         channel=channel_id,
@@ -157,6 +154,7 @@ def create_open_ended_poll(ack: Ack, body, view, client, logger):
         creator=user_name,
         channel_id=channel_id,
         creation_date=creation_date,
+        max_option_count=max_responses_count,
         anonymous=anon_enabled,
         can_add_choices=True,
     )
@@ -174,7 +172,7 @@ def create_multiple_choice_poll(ack: Ack, body, view, client, logger):
     values = view["state"]["values"]
     question = None
     choices = None
-
+    max_responses_count = 999
     for block_id, block_data in values.items():
         if "question_input" in block_data:
             question = block_data["question_input"]["value"]
@@ -219,6 +217,7 @@ def create_multiple_choice_poll(ack: Ack, body, view, client, logger):
         creator=user_name,
         channel_id = channel_id,
         creation_date=creation_date,
+        max_option_count=max_responses_count,
         anonymous = anon_enabled,
         can_add_choices = can_add_choices,
     )

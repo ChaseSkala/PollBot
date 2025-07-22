@@ -35,12 +35,14 @@ class PollOption:
 
 class Poll:
     def __init__(self, poll_id: str, question: str, options: list[str],
-                 creator: str, channel_id: str, creation_date: str, anonymous: bool = False, can_add_choices: bool = False):
+                 creator: str, channel_id: str, creation_date: str,
+                 max_option_count: int, anonymous: bool = False, can_add_choices: bool = False):
         self.poll_id = poll_id
         self.question = question
         self.creator = creator
         self.channel_id = channel_id
         self.creation_date = creation_date
+        self.max_option_count = max_option_count
         self.anonymous = anonymous
         self.can_add_choices = can_add_choices
         self.options = [PollOption(text=opt) for opt in options]
@@ -131,11 +133,12 @@ class PollManager:
         return len(self.polls)
 
     def create_poll(self, poll_id: float or int, question: str, options: list[str],
-                    creator: str, channel_id: str, creation_date: str, anonymous: bool = False, can_add_choices: bool = False) -> Poll:
-        poll = Poll(poll_id, question, options, creator, channel_id, creation_date, anonymous, can_add_choices)
+                    creator: str, channel_id: str, creation_date: str,
+                    max_option_count: int, anonymous: bool = False, can_add_choices: bool = False) -> Poll:
+        poll = Poll(poll_id, question, options, creator, channel_id, creation_date,
+                   max_option_count, anonymous, can_add_choices)
         self.polls[poll_id] = poll
         self.poll_history.append(poll)
-
         return poll
 
     def get_poll(self, poll_id: str) -> Optional[Poll]:
