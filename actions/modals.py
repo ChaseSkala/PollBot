@@ -252,7 +252,7 @@ def all_results(poll, channel_id):
         votes = option.votes
         percentage = poll.percentages[i]
         poll_percentage = round(percentage)
-        filled = round(percentage / 5)
+        filled = round(percentage * 30 / 100)
         empty = 30 - filled
         if filled == 0:
             bar = " ⁢" * 30
@@ -273,7 +273,20 @@ def all_results(poll, channel_id):
             }
         })
         modal_blocks.append({"type": "divider"})
-
+    modal_blocks.append({
+        "type": "actions",
+        "elements": [
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "View Poll History",
+                    "emoji": True
+                },
+                "action_id": "back_to_history"
+            }
+        ]
+    })
     return {
         "type": "modal",
         "title": {
@@ -348,7 +361,20 @@ def all_open_ended(poll, channel_id):
             }
         })
         modal_blocks.append({"type": "divider"})
-
+    modal_blocks.append({
+        "type": "actions",
+        "elements": [
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "View Poll History",
+                    "emoji": True
+                },
+                "action_id": "back_to_history"
+            }
+        ]
+    })
     return {
         "type": "modal",
         "title": {
@@ -523,3 +549,93 @@ def editing_response(allowed: bool, ts, channel, response_num):
             ]
         }
     return modal
+
+def show_poll_history(manager):
+    modal_blocks = []
+
+    for i, poll in enumerate(manager.history):
+
+        if poll.options[0].text == 'Add your responses!':
+            modal_blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"{poll.question}",
+                    "emoji": True
+                }
+            })
+            modal_blocks.append({
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "plain_text",
+                        "text": f"This was an open ended question, you can view the responses with the button below.",
+                        "emoji": True
+                    }
+                ]
+            })
+            modal_blocks.append({
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "View Full Poll",
+                            "emoji": True
+                        },
+                        "value": f"{poll.poll_id}",
+                        "action_id": f"poll_button-{i}"
+                    }
+                ]
+            })
+            modal_blocks.append({"type": "divider"})
+        else:
+            modal_blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"{poll.question}",
+                    "emoji": True
+                }
+            })
+            modal_blocks.append({
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "plain_text",
+                        "text": f"The winner was: {poll.winner}",
+                        "emoji": True
+                    }
+                ]
+            })
+            modal_blocks.append({
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "View Full Poll",
+                            "emoji": True
+                        },
+                        "value": f"{poll.poll_id}",
+                        "action_id": f"poll_button-{i}"
+                    }
+                ]
+            })
+            modal_blocks.append({"type": "divider"})
+    return {
+        "type": "modal",
+        "title": {
+            "type": "plain_text",
+            "text": "Poll History",
+            "emoji": True
+        },
+        "close": {
+            "type": "plain_text",
+            "text": "Cancel",
+            "emoji": True
+        },
+        "blocks": modal_blocks
+    }

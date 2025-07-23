@@ -173,7 +173,7 @@ def render_multiple_choice_options(poll):
         votes = option.votes
         percentage = poll.percentages[i]
         poll_percentage = round(percentage)
-        filled = round(percentage / 5)
+        filled = round(percentage * 30 / 100)
         empty = 30 - filled
         bar = "█" * filled + " " * empty
         label = f"*{option.text}*"
@@ -184,11 +184,11 @@ def render_multiple_choice_options(poll):
             voter_mentions = ", ".join(f"<@{uid}>" for uid in option.voters.keys())
             field_text += f"\n_{voter_mentions}_"
 
-
         fields.append({
             "type": "mrkdwn",
             "text": field_text
         })
+
     if fields:
         blocks.append({
             "type": "section",
@@ -343,15 +343,3 @@ def render_open_ended_options(poll):
         ]
     })
     return blocks
-
-def render_history(history):
-    lines = []
-    for poll in history:
-        lines.append(
-            f"```Created: {poll.creation_date} \nPoll ID: {poll.poll_id} \nPoll Question:  {poll.question}\nThe winner of the poll was: {poll.winner}```"
-        )
-    poll_lines = "\n".join(lines)
-    return (
-        f"*You are currently viewing the Poll History*\n"
-        f"{poll_lines}"
-    )

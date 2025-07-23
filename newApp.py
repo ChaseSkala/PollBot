@@ -38,6 +38,18 @@ def handle_poll_command(ack: Ack, command: dict):
         view=modal,
     )
 
+@app.command("/history")
+def get_history(ack: Ack, command: dict):
+    global client
+    global manager
+    ack()
+    modal = show_poll_history(manager)
+    channel = command["channel_id"]
+    modal["private_metadata"] = channel
+    client.views_open(
+        trigger_id=command["trigger_id"],
+        view=modal,
+    )
 @app.action("open-ended")
 def handle_open_ended(ack: Ack, body:dict):
     global client
@@ -228,18 +240,6 @@ def create_multiple_choice_poll(ack: Ack, body, view, client, logger):
         blocks=render_multiple_choice(poll)
     )
 
-@app.command("/history")
-def get_history(ack: Ack, command: dict):
-    global client
-    ack()
-    ts = command.get("text").strip()
-    channel_id = command["channel_id"]
-    poll_text = render_history(manager.history)
-    client.chat_postMessage(
-        channel=channel_id,
-        text=poll_text,
-    )
-
 @app.action(re.compile(r"actionId-\d+"))
 def handle_vote(ack: Ack, body, action, logger):
     ack()
@@ -272,6 +272,47 @@ def handle_vote(ack: Ack, body, action, logger):
         text="Poll update",
         blocks=blocks
     )
+
+@app.action("back_to_history")
+def handle_back_to_history(ack, body, client, logger):
+    ack()
+    modal = show_poll_history(manager)
+    try:
+        client.views_update(
+            view_id=body['view']['id'],
+            view=modal
+        )
+    except Exception as e:
+        logger.error(f"Error updating modal: {e}")
+
+@app.action(re.compile(r"poll_button-\d+"))
+def handle_poll_button(ack: Ack, body, view, action, logger):
+    ack()
+    global client
+
+    pprint.pprint(action)
+    pprint.pprint(body)
+    channel = body['view']["private_metadata"]
+    poll_id = str(action["value"])
+    poll = manager.get_poll(poll_id)
+
+    if poll.options[0].text == 'Add your responses!':
+        modal = all_open_ended(poll, channel)
+        modal["private_metadata"] = channel
+        client.views_update(
+            view_id=body['view']['id'],
+            view=modal,
+        )
+        logger.info("view-all-open-ended")
+    else:
+        modal = all_results(poll, channel)
+        modal["private_metadata"] = channel
+        client.views_update(
+            view_id=body['view']['id'],
+            view=modal,
+        )
+        logger.info("results")
+
 
 @app.action("poll_option_select")
 def handle_dropdown_vote(ack: Ack, body, action, logger):
