@@ -27,9 +27,9 @@ def register_open_ended(app):
             view=modal,
         )
 
-def register_create_open_ended_poll(app):
+def register_create_open_ended_poll(app, manager):
     @app.view("open-ended")
-    def create_open_ended_poll(client, manager, ack, body, view, logger):
+    def create_open_ended_poll(client, ack, body, view, logger):
         ack()
         values = view["state"]["values"]
         question = None
@@ -93,9 +93,9 @@ def register_multiple_choice(app):
             view=modal,
         )
 
-def register_create_multiple_choice_poll(app):
+def register_create_multiple_choice_poll(app, manager):
     @app.view("multiple-choice")
-    def create_multiple_choice_poll(client, manager, ack, body, view,logger):
+    def create_multiple_choice_poll(client, ack, body, view,logger):
         ack()
         values = view["state"]["values"]
         question = None
@@ -155,9 +155,9 @@ def register_create_multiple_choice_poll(app):
             blocks=render_multiple_choice(poll)
         )
 
-def register_create_previous_poll(app):
+def register_create_previous_poll(app, manager):
     @app.action(re.compile(r"previous-poll-\d+"))
-    def create_previous_poll(client, manager, ack, body, action):
+    def create_previous_poll(client, ack, body, action):
         ack()
         channel_id = body['view']["private_metadata"]
         poll_id = str(action["value"])

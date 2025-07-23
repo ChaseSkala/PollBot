@@ -4,9 +4,9 @@ from actions.modals.results import all_open_ended, all_results
 from generalservices import create_id
 
 
-def register_poll_button(app):
+def register_poll_button(app, manager):
     @app.action(re.compile(r"poll_button-\d+"))
-    def handle_poll_button(client, manager, ack, body, action, logger):
+    def handle_poll_button(client, ack, body, action, logger):
         ack()
         channel = body['view']["private_metadata"]
         poll_id = str(action["value"])
@@ -29,9 +29,9 @@ def register_poll_button(app):
             )
             logger.info("results")
 
-def register_results(app):
+def register_results(app, manager):
     @app.action("results")
-    def handle_results(client, manager, ack, body, logger):
+    def handle_results(client, ack, body, logger):
         ack()
         ts = body['message']['ts']
         channel = body['channel']['id']
@@ -45,9 +45,9 @@ def register_results(app):
         )
         logger.info("results")
 
-def register_view_all_open_ended(app):
+def register_view_all_open_ended(app, manager):
     @app.action("view-all-open-ended")
-    def handle_view_all_open_ended(client, manager, ack, body, logger):
+    def handle_view_all_open_ended(client, ack, body, logger):
         ack()
         ts = body['message']['ts']
         channel = body['channel']['id']

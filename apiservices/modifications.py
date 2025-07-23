@@ -20,9 +20,9 @@ def register_add_option(app):
             view=modal,
         )
 
-def register_adding_option(app):
+def register_adding_option(app, manager):
     @app.view("adding-option")
-    def handle_add_option_added(client, manager, ack, body: dict):
+    def handle_add_option_added(client, ack, body: dict):
         ack()
 
         channel, ts = body['view']['private_metadata'].split('|')
@@ -54,9 +54,9 @@ def register_adding_option(app):
                 text=f"You cannot add any more options!",
             )
 
-def register_votes(app):
+def register_votes(app, manager):
     @app.action(re.compile(r"actionId-\d+"))
-    def handle_vote(client, manager, ack, body, action):
+    def handle_vote(client, ack, body, action):
         ack()
         action_id = action["action_id"]
         index = int(action_id.split('-')[1])
@@ -87,9 +87,9 @@ def register_votes(app):
             blocks=blocks
         )
 
-def register_dropdown_vote(app):
+def register_dropdown_vote(app, manager):
     @app.action("poll_option_select")
-    def handle_dropdown_vote(client, manager, ack, body, action):
+    def handle_dropdown_vote(client, ack, body, action):
         ack()
         index = int(action["selected_option"]["value"])
         ts = body['message']['ts']
@@ -130,9 +130,9 @@ def register_edit_response(app):
         )
         logger.info("view-all-open-ended")
 
-def register_editing_response(app):
+def register_editing_response(app, manager):
     @app.view("editing-response")
-    def handle_editing_response(client, manager, ack, body, view, logger):
+    def handle_editing_response(client, ack, body, view, logger):
         ack()
         private_metadata = view.get("private_metadata", "")
         metadata = json.loads(private_metadata) if private_metadata else {}
@@ -171,9 +171,9 @@ def register_editing_response(app):
             else:
                 continue
 
-def register_submit_edit_response(app):
+def register_submit_edit_response(app, manager):
     @app.view("submit-edit-response")
-    def handle_response_change(client, manager, ack, view):
+    def handle_response_change(client, ack, view):
         ack()
         private_metadata = view.get("private_metadata", "")
         metadata = json.loads(private_metadata) if private_metadata else {}

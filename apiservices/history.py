@@ -1,9 +1,9 @@
 from actions.modals.history import show_poll_history
 
 
-def register_get_history(app):
+def register_get_history(app, manager):
     @app.command("/history")
-    def get_history(client, manager, ack, command: dict):
+    def get_history(client, ack, command: dict):
         ack()
         modal = show_poll_history(manager)
         channel = command["channel_id"]
@@ -13,9 +13,9 @@ def register_get_history(app):
             view=modal,
         )
 
-def register_create_from_previous_poll(app):
+def register_create_from_previous_poll(app, manager):
     @app.action("create-from-previous-poll")
-    def create_from_previous_poll(client, manager, ack, body: dict):
+    def create_from_previous_poll(client, ack, body: dict):
         ack()
         modal = show_poll_history(manager)
         channel = body['view']["private_metadata"]
@@ -25,9 +25,9 @@ def register_create_from_previous_poll(app):
             view=modal,
         )
 
-def register_back_to_history(app):
+def register_back_to_history(app, manager):
     @app.action("back_to_history")
-    def handle_back_to_history(client, manager, ack, body, logger):
+    def handle_back_to_history(client, ack, body, logger):
         ack()
         channel = body['view']["private_metadata"]
         modal = show_poll_history(manager)
