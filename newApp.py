@@ -50,6 +50,20 @@ def get_history(ack: Ack, command: dict):
         trigger_id=command["trigger_id"],
         view=modal,
     )
+
+@app.action("create-from-previous-poll")
+def create_from_previous_poll(ack: Ack, body: dict):
+    global client
+    global manager
+    ack()
+    modal = show_poll_history(manager)
+    channel = body['view']["private_metadata"]
+    modal["private_metadata"] = channel
+    client.views_update(
+        view_id=body["view"]["id"],
+        view=modal,
+    )
+
 @app.action("open-ended")
 def handle_open_ended(ack: Ack, body:dict):
     global client
@@ -195,8 +209,6 @@ def create_multiple_choice_poll(ack: Ack, body, view, client, logger):
     if not question or not choices:
         logger.error("Missing question or choices!")
         return
-    pprint.pprint(choices)
-    pprint.pprint(options)
     logger.info(f"Question: {question}")
     logger.info(f"Options: {options}")
 
@@ -275,8 +287,11 @@ def handle_vote(ack: Ack, body, action, logger):
 
 @app.action("back_to_history")
 def handle_back_to_history(ack, body, client, logger):
+    global manager
     ack()
+    channel = body['view']["private_metadata"]
     modal = show_poll_history(manager)
+    modal["private_metadata"] = channel
     try:
         client.views_update(
             view_id=body['view']['id'],
@@ -289,9 +304,6 @@ def handle_back_to_history(ack, body, client, logger):
 def handle_poll_button(ack: Ack, body, view, action, logger):
     ack()
     global client
-
-    pprint.pprint(action)
-    pprint.pprint(body)
     channel = body['view']["private_metadata"]
     poll_id = str(action["value"])
     poll = manager.get_poll(poll_id)
@@ -312,6 +324,69 @@ def handle_poll_button(ack: Ack, body, view, action, logger):
             view=modal,
         )
         logger.info("results")
+
+@app.action(re.compile(r"previous-poll-\d+"))
+def create_previous_poll(ack: Ack, body, view, action, logger):
+    ack()
+    global client
+    channel_id = body['view']["private_metadata"]
+    poll_id = str(action["value"])
+    old_poll = manager.get_poll(poll_id)
+
+    user_id = body["user"]["id"]
+    user_info = client.users_info(user=user_id)
+    user_name = user_info["user"]["name"]
+
+    if old_poll.options[0].text == 'Add your responses!':
+        response = client.chat_postMessage(
+            channel=channel_id,
+            text="Creating poll..."
+        )
+
+        pollID = create_id(response['ts'])
+        creation_date = convert_unix_to_date(float(response['ts']))
+        poll = manager.create_poll(
+            poll_id=pollID,
+            question=old_poll.question,
+            options=['Add your responses!'],
+            creator=user_name,
+            channel_id=channel_id,
+            creation_date=creation_date,
+            max_option_count=old_poll.max_option_count,
+            anonymous=old_poll.anonymous,
+            can_add_choices=True,
+        )
+        client.chat_update(
+            channel=channel_id,
+            ts=response['ts'],
+            text="Created OE Poll",
+            blocks=render_open_ended(poll)
+        )
+    else:
+        response = client.chat_postMessage(
+            channel=channel_id,
+            text="Creating poll..."
+        )
+
+        pollID = create_id(response['ts'])
+        creation_date = convert_unix_to_date(float(response['ts']))
+        poll = manager.create_poll(
+            poll_id=pollID,
+            question=old_poll.question,
+            options=[opt.text for opt in old_poll.options],
+            creator=user_name,
+            channel_id=channel_id,
+            creation_date=creation_date,
+            max_option_count=old_poll.max_option_count,
+            anonymous=old_poll.anonymous,
+            can_add_choices=old_poll.can_add_choices,
+        )
+        client.chat_update(
+            channel=channel_id,
+            ts=response['ts'],
+            text="Created MC Poll",
+            blocks=render_multiple_choice(poll)
+        )
 
 
 @app.action("poll_option_select")

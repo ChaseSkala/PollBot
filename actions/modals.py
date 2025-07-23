@@ -37,7 +37,17 @@ def create_home_menu():
 					},
 					"value": "open-ended",
 					"action_id": "open-ended"
-				}
+				},
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Create from previous poll",
+                        "emoji": True
+                    },
+                    "value": "create-from-previous-poll",
+                    "action_id": "create-from-previous-poll"
+                }
 			]
 		}
 	]
@@ -553,6 +563,16 @@ def editing_response(allowed: bool, ts, channel, response_num):
 def show_poll_history(manager):
     modal_blocks = []
 
+    if not manager.history:
+        modal_blocks.append({
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "There is currently no previous polls.",
+                "emoji": True
+            }
+        })
+
     for i, poll in enumerate(manager.history):
 
         if poll.options[0].text == 'Add your responses!':
@@ -586,6 +606,16 @@ def show_poll_history(manager):
                         },
                         "value": f"{poll.poll_id}",
                         "action_id": f"poll_button-{i}"
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Recreate Poll",
+                            "emoji": True
+                        },
+                        "value": f"{poll.poll_id}",
+                        "action_id": f"previous-poll-{i}"
                     }
                 ]
             })
@@ -621,6 +651,16 @@ def show_poll_history(manager):
                         },
                         "value": f"{poll.poll_id}",
                         "action_id": f"poll_button-{i}"
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Recreate Poll",
+                            "emoji": True
+                        },
+                        "value": f"{poll.poll_id}",
+                        "action_id": f"previous-poll-{i}"
                     }
                 ]
             })
