@@ -38,3 +38,35 @@ def can_add_more_options(poll, user_id):
         return False
     else:
         return True
+
+def letter_match_score(search: str, question: str) -> int:
+    search = search.lower()
+    question = question.lower()
+    score = 0
+    q_idx = 0
+    for s in search:
+        found = False
+        while q_idx < len(question):
+            if question[q_idx] == s:
+                score += 1
+                q_idx += 1
+                found = True
+                break
+            q_idx += 1
+        if not found:
+            break
+    return score
+
+def sort_polls(polls, sort_by):
+    if sort_by == "newest":
+        return sorted(polls, key=lambda p: p.creation_date, reverse=True)
+    elif sort_by == "oldest":
+        return sorted(polls, key=lambda p: p.creation_date)
+    elif sort_by == "poll_id":
+        return sorted(polls, key=lambda p: p.poll_id)
+    elif sort_by == "votes":
+        return sorted(polls, key=lambda p: p.total_votes, reverse=True)
+    elif sort_by == "alphabetical":
+        return sorted(polls, key=lambda p: p.question.lower())
+    else:
+        return polls  # Default: no sorting

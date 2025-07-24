@@ -1,6 +1,4 @@
 def all_results(poll, channel_id):
-    fields = []
-
     modal_blocks = [
         {
             "type": "context",
@@ -66,12 +64,23 @@ def all_results(poll, channel_id):
                 "type": "button",
                 "text": {
                     "type": "plain_text",
-                    "text": "View Poll History",
+                    "text": "View History",
                     "emoji": True
                 },
                 "action_id": "back_to_history"
+            },
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Recreate Poll",
+                    "emoji": True
+                },
+                "value": f"{poll.poll_id}",
+                "action_id": f"previous-poll-998"
             }
         ]
+
     })
     return {
         "type": "modal",
@@ -154,10 +163,20 @@ def all_open_ended(poll, channel_id):
                 "type": "button",
                 "text": {
                     "type": "plain_text",
-                    "text": "View Poll History",
+                    "text": "View History",
                     "emoji": True
                 },
                 "action_id": "back_to_history"
+            },
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Recreate Poll",
+                    "emoji": True
+                },
+                "value": f"{poll.poll_id}",
+                "action_id": f"previous-poll-999"
             }
         ]
     })

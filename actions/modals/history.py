@@ -1,4 +1,7 @@
-def show_poll_history(manager):
+from generalservices import sort_polls
+
+
+def show_poll_history(manager, sort_by="newest"):
     modal_blocks = []
 
     if not manager.history:
@@ -11,7 +14,48 @@ def show_poll_history(manager):
             }
         })
 
-    for i, poll in enumerate(manager.history):
+    modal_blocks.append({
+        "type": "actions",
+        "block_id": "search_block",
+        "elements": [
+            {
+                "type": "external_select",
+                "action_id": "search_action",
+                "placeholder": {"type": "plain_text", "text": "Type to search..."}
+            },
+            {
+                "type": "static_select",
+                "action_id": "sort_action",
+                "placeholder": {"type": "plain_text", "text": "Sort by..."},
+                "options": [
+                    {
+                        "text": {"type": "plain_text", "text": "Newest First"},
+                        "value": "newest"
+                    },
+                    {
+                        "text": {"type": "plain_text", "text": "Oldest First"},
+                        "value": "oldest"
+                    },
+                    {
+                        "text": {"type": "plain_text", "text": "Poll ID"},
+                        "value": "poll_id"
+                    },
+                    {
+                        "text": {"type": "plain_text", "text": "Most Votes"},
+                        "value": "votes"
+                    },
+                    {
+                        "text": {"type": "plain_text", "text": "Alphabetical"},
+                        "value": "alphabetical"
+                    }
+                ]
+            }
+        ]
+    })
+
+    sorted_polls = sort_polls(manager.history, sort_by)
+
+    for i, poll in enumerate(sorted_polls):
 
         if poll.options[0].text == 'Add your responses!':
             modal_blocks.append({

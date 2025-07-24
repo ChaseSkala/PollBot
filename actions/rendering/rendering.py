@@ -36,7 +36,7 @@ def render_multiple_choice(poll):
             },
             "label": {
                 "type": "plain_text",
-                "text": "Label",
+                "text": "Select an option",
                 "emoji": True
             }
         })

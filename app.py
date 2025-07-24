@@ -7,7 +7,8 @@ from apiservices.creation import register_poll_command, register_open_ended, reg
 from apiservices.history import register_get_history, register_create_from_previous_poll, register_back_to_history
 from apiservices.modifications import register_add_option, register_adding_option, register_votes, \
     register_dropdown_vote, register_edit_response, register_editing_response, register_submit_edit_response
-from apiservices.services import register_poll_button, register_results, register_view_all_open_ended
+from apiservices.services import register_poll_button, register_results, register_view_all_open_ended, \
+    register_search_action, register_show_search_action, register_sort_action
 from models import *
 from dotenv import load_dotenv
 from slack_bolt import App
@@ -50,6 +51,9 @@ register_view_all_open_ended(app, manager)
 register_edit_response(app)
 register_editing_response(app, manager)
 register_submit_edit_response(app, manager)
+register_search_action(app, manager)
+register_show_search_action(app, manager)
+register_sort_action(app, manager)
 
 if __name__ == "__main__":
     SocketModeHandler(app, SLACK_APP_TOKEN).start()

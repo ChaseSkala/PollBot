@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
+from generalservices import letter_match_score
+
 
 @dataclass
 class PollOption:
@@ -16,7 +18,7 @@ class PollOption:
             return True
         return False
 
-    def remove_vote(self, user_id: str, username: str) -> bool:
+    def remove_vote(self, user_id: str) -> bool:
         if user_id in self.voters:
             del self.voters[user_id]
             self.votes -= 1
@@ -77,23 +79,6 @@ class Poll:
         return [(option.votes / total) * 100 for option in self.options]
 
     @property
-    def results_summary(self) -> dict:
-        return {
-            'poll_id': self.poll_id,
-            'question': self.question,
-            'total_votes': self.total_votes,
-            'options': [
-                {
-                    'text': opt.text,
-                    'votes': opt.votes,
-                    'percentage': pct,
-                    'voters': opt.voters if not self.anonymous else []
-                }
-                for opt, pct in zip(self.options, self.percentages)
-            ]
-        }
-
-    @property
     def is_active(self) -> bool:
         return self.total_votes > 0
 
@@ -102,9 +87,9 @@ class Poll:
             return self.options[option_index].add_vote(user_id, username)
         return False
 
-    def remove_vote(self, option_index: int, user_id: str, username: str) -> bool:
+    def remove_vote(self, option_index: int, user_id: str) -> bool:
         if 0 <= option_index < len(self.options):
-            return self.options[option_index].remove_vote(user_id, username)
+            return self.options[option_index].remove_vote(user_id)
         return False
 
     def get_user_vote(self, user_id: str) -> Optional[int]:
@@ -143,3 +128,16 @@ class PollManager:
 
     def get_poll(self, poll_id: str) -> Optional[Poll]:
         return self.polls.get(poll_id)
+
+    def filter_polls_by_question(self, search: str, min_score: int = 1, max_results: int = 10):
+        scored = [
+            (poll, letter_match_score(search, poll.question))
+            for poll in self.polls.values()
+        ]
+        filtered = [item for item in scored if item[1] >= min_score]
+        filtered.sort(key=lambda x: (-x[1], x[0].question))
+        return [item[0] for item in filtered[:max_results]]
+
+    def get_filter_options(self, search: str, max_results: int = 10):
+        matching_polls = self.filter_polls_by_question(search, max_results=max_results)
+        return [(poll.question, poll.poll_id) for poll in matching_polls]

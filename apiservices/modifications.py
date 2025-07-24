@@ -72,7 +72,7 @@ def register_votes(app, manager):
         option = poll.options[index]
 
         if user_id in option.voters:
-            poll.remove_vote(index, user_id, username)
+            poll.remove_vote(index, user_id)
         else:
             poll.add_vote(index, user_id, username)
 
@@ -104,7 +104,7 @@ def register_dropdown_vote(app, manager):
         option = poll.options[index]
 
         if user_id in option.voters:
-            poll.remove_vote(index, user_id, username)
+            poll.remove_vote(index, user_id)
         else:
             poll.add_vote(index, user_id, username)
         if poll.options[0].text == 'Add your responses!':
