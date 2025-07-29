@@ -1,12 +1,16 @@
-def create_home_menu():
+from generalservices import sort_polls
+from models import Poll, PollOption
+
+
+def open_template_types():
     blocks = {
-        "type": "modal",
-        "callback_id": "home-menu",
         "title": {
             "type": "plain_text",
-            "text": "Create a poll",
+            "text": "What kind of poll?",
             "emoji": True
         },
+        "type": "modal",
+        "callback_id": "open-ended",
         "close": {
             "type": "plain_text",
             "text": "Cancel",
@@ -24,7 +28,7 @@ def create_home_menu():
                             "emoji": True
                         },
                         "value": "multiple-choice",
-                        "action_id": "multiple-choice"
+                        "action_id": "multiple-choice-template"
                     },
                     {
                         "type": "button",
@@ -34,27 +38,7 @@ def create_home_menu():
                             "emoji": True
                         },
                         "value": "open-ended",
-                        "action_id": "open-ended"
-                    },
-                    {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": ":card_index_dividers: Create from previous poll",
-                            "emoji": True
-                        },
-                        "value": "create-from-previous-poll",
-                        "action_id": "create-from-previous-poll"
-                    },
-                    {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": ":card_file_box: Use A Template",
-                            "emoji": True
-                        },
-                        "value": "create-from-template",
-                        "action_id": "create-from-template"
+                        "action_id": "open-ended-template"
                     }
                 ]
             }
@@ -62,37 +46,25 @@ def create_home_menu():
     }
     return blocks
 
-def create_multiple_choice():
+def create_mc_template():
     blocks = {
-        "type": "modal",
-        "callback_id": "multiple-choice",
         "title": {
             "type": "plain_text",
-            "text": "Rodger",
+            "text": "Create A Template",
             "emoji": True
         },
         "submit": {
             "type": "plain_text",
-            "text": "Submit",
-            "emoji": True
+            "text": "Save"
         },
+        "type": "modal",
+        "callback_id": "mc-template-created",
         "close": {
             "type": "plain_text",
             "text": "Cancel",
             "emoji": True
         },
         "blocks": [
-            {
-                "type": "header",
-                "text": {
-                    "type": "plain_text",
-                    "text": "Create A Poll",
-                    "emoji": True
-                }
-            },
-            {
-                "type": "divider"
-            },
             {
                 "type": "input",
                 "element": {
@@ -154,10 +126,10 @@ def create_multiple_choice():
     }
     return blocks
 
-def create_open_ended():
+def create_oe_template():
     blocks = {
         "type": "modal",
-        "callback_id": "open-ended",
+        "callback_id": "oe-template-created",
         "title": {
             "type": "plain_text",
             "text": "Create a poll",
@@ -165,7 +137,7 @@ def create_open_ended():
         },
         "submit": {
             "type": "plain_text",
-            "text": "Submit",
+            "text": "Save",
             "emoji": True
         },
         "close": {
@@ -229,46 +201,96 @@ def create_open_ended():
     }
     return blocks
 
-def open_templates():
-    blocks = {
-        "title": {
-            "type": "plain_text",
-            "text": "Templates",
-            "emoji": True
-        },
-        "type": "modal",
-        "callback_id": "open-ended",
-        "close": {
-            "type": "plain_text",
-            "text": "Cancel",
-            "emoji": True
-        },
-        "blocks": [
-            {
+def show_all_templates(session, sort_by="newest"):
+    modal_blocks = []
+
+    polls = session.query(Poll).filter_by(is_template=True).all()
+
+    if not polls:
+        modal_blocks.append({
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": ":open_file_folder: You have not created any templates.",
+                "emoji": True
+            }
+        })
+
+    sorted_polls = sort_polls(polls, sort_by)
+
+    for i, poll in enumerate(sorted_polls):
+
+        if poll.options[0].text == 'Add your responses!':
+            modal_blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"{poll.question}",
+                    "emoji": True
+                }
+            })
+            modal_blocks.append({
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "plain_text",
+                        "text": f"This is an open ended template.",
+                        "emoji": True
+                    }
+                ]
+            })
+            modal_blocks.append({
                 "type": "actions",
                 "elements": [
                     {
                         "type": "button",
                         "text": {
                             "type": "plain_text",
-                            "text": ":pencil2: Create a template",
+                            "text": "Use this template",
                             "emoji": True
                         },
-                        "value": "create-template",
-                        "action_id": "create-template"
-                    },
+                        "value": f"{poll.poll_id}",
+                        "action_id": f"poll_button-{i}"
+                    }
+                ]
+            })
+            modal_blocks.append({"type": "divider"})
+        else:
+            modal_blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"{poll.question}",
+                    "emoji": True
+                }
+            })
+            modal_blocks.append({
+                "type": "actions",
+                "elements": [
                     {
                         "type": "button",
                         "text": {
                             "type": "plain_text",
-                            "text": ":file_folder: View Templates",
+                            "text": "Use this template",
                             "emoji": True
                         },
-                        "value": "view-templates",
-                        "action_id": "view-templates"
+                        "value": f"{poll.poll_id}",
+                        "action_id": f"poll_button-{i}"
                     }
                 ]
-            }
-        ]
+            })
+            modal_blocks.append({"type": "divider"})
+    return {
+        "type": "modal",
+        "title": {
+            "type": "plain_text",
+            "text": "Templates",
+            "emoji": True
+        },
+        "close": {
+            "type": "plain_text",
+            "text": "Cancel",
+            "emoji": True
+        },
+        "blocks": modal_blocks
     }
-    return blocks

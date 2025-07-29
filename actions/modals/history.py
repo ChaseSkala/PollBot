@@ -1,15 +1,18 @@
 from generalservices import sort_polls
 
+from models import Poll, PollOption
 
-def show_poll_history(manager, sort_by="newest"):
+def show_poll_history(session, sort_by="newest"):
     modal_blocks = []
 
-    if not manager.history:
+    polls = session.query(Poll).filter_by(is_template=False).all()
+
+    if not polls:
         modal_blocks.append({
             "type": "header",
             "text": {
                 "type": "plain_text",
-                "text": "There is currently no previous polls.",
+                "text": ":open_file_folder: There is currently no previous polls.",
                 "emoji": True
             }
         })
@@ -21,7 +24,7 @@ def show_poll_history(manager, sort_by="newest"):
             {
                 "type": "external_select",
                 "action_id": "search_action",
-                "placeholder": {"type": "plain_text", "text": "Type to search..."}
+                "placeholder": {"type": "plain_text", "text": ":mag_right: Type to search..."}
             },
             {
                 "type": "static_select",
@@ -29,11 +32,11 @@ def show_poll_history(manager, sort_by="newest"):
                 "placeholder": {"type": "plain_text", "text": "Sort by..."},
                 "options": [
                     {
-                        "text": {"type": "plain_text", "text": "Newest First"},
+                        "text": {"type": "plain_text", "text": "Newest"},
                         "value": "newest"
                     },
                     {
-                        "text": {"type": "plain_text", "text": "Oldest First"},
+                        "text": {"type": "plain_text", "text": "Oldest"},
                         "value": "oldest"
                     },
                     {
@@ -53,7 +56,7 @@ def show_poll_history(manager, sort_by="newest"):
         ]
     })
 
-    sorted_polls = sort_polls(manager.history, sort_by)
+    sorted_polls = sort_polls(polls, sort_by)
 
     for i, poll in enumerate(sorted_polls):
 
@@ -151,7 +154,7 @@ def show_poll_history(manager, sort_by="newest"):
         "type": "modal",
         "title": {
             "type": "plain_text",
-            "text": "Poll History",
+            "text": "History",
             "emoji": True
         },
         "close": {

@@ -1,15 +1,25 @@
-from dataclasses import dataclass, field
-from typing import Optional
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, JSON
+from sqlalchemy.orm import declarative_base, relationship
 
-from generalservices import letter_match_score
+db_url = "sqlite:///C:/Users/chaseskala/Desktop/PollDatabase/pollDatabase.db"
+
+engine = create_engine(db_url)
+
+Base = declarative_base()
 
 
-@dataclass
-class PollOption:
-    text: str
-    votes: int = 0
-    voters: dict[str, str] = field(default_factory=dict)
-    response_user_ids: dict[int, int] = field(default_factory=dict)
+class PollOption(Base):
+    __tablename__ = "poll_options"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    text = Column(String, nullable=False)
+    votes = Column(Integer, default=0)
+    voters = Column(JSON, default=dict)
+    response_user_ids = Column(JSON, default=dict)
+    poll_id = Column(String, ForeignKey("polls.poll_id"))
+
+
+    poll = relationship("Poll", back_populates="options")
 
     def add_vote(self, user_id: str, username: str) -> bool:
         if user_id not in self.voters:
@@ -26,46 +36,37 @@ class PollOption:
         return False
 
     def add_user(self, user_id: int, response_num: int) -> None:
-        if user_id not in self.response_user_ids:
+        if user_id not in self.response_user_ids.values():
             self.response_user_ids[response_num] = user_id
 
     def check_user(self, user_id: int, response_num: int) -> bool:
-        if response_num in self.response_user_ids:
-            if self.response_user_ids[response_num] == user_id:
-                return True
-        return False
+        return self.response_user_ids.get(response_num) == user_id
 
-class Poll:
-    def __init__(self, poll_id: str, question: str, options: list[str],
-                 creator: str, channel_id: str, creation_date: str,
-                 max_option_count: int, anonymous: bool = False, can_add_choices: bool = False):
-        self.poll_id = poll_id
-        self.question = question
-        self.creator = creator
-        self.channel_id = channel_id
-        self.creation_date = creation_date
-        self.max_option_count = max_option_count
-        self.anonymous = anonymous
-        self.can_add_choices = can_add_choices
-        self.options = [PollOption(text=opt) for opt in options]
-        self.winners = []
-        self.user_option_count = {}
+class Poll(Base):
+    __tablename__ = "polls"
+
+    poll_id = Column(String, primary_key=True)
+    question = Column(String, nullable=False)
+    creator = Column(String, nullable=False)
+    channel_id = Column(String, nullable=False)
+    creation_date = Column(String, nullable=False)
+    max_option_count = Column(Integer, nullable=False)
+    anonymous = Column(Boolean, default=False)
+    can_add_choices = Column(Boolean, default=False)
+    is_template = Column(Boolean, default=False)
+    user_option_count = Column(JSON, default=dict)
+
+    options = relationship("PollOption", back_populates="poll", cascade="all, delete-orphan")
 
     @property
     def winner(self):
         if not self.options:
             return None
-
         max_votes = max(opt.votes for opt in self.options)
         if max_votes == 0:
             return "Nobody voted"
-
         winners = [opt.text for opt in self.options if opt.votes == max_votes]
-
-        if len(winners) == 1:
-            return winners[0]
-        else:
-            return winners
+        return winners[0] if len(winners) == 1 else winners
 
     @property
     def total_votes(self) -> int:
@@ -82,62 +83,4 @@ class Poll:
     def is_active(self) -> bool:
         return self.total_votes > 0
 
-    def add_vote(self, option_index: int, user_id: str, username: str) -> bool:
-        if 0 <= option_index < len(self.options):
-            return self.options[option_index].add_vote(user_id, username)
-        return False
-
-    def remove_vote(self, option_index: int, user_id: str) -> bool:
-        if 0 <= option_index < len(self.options):
-            return self.options[option_index].remove_vote(user_id)
-        return False
-
-    def get_user_vote(self, user_id: str) -> Optional[int]:
-        for i, option in enumerate(self.options):
-            if user_id in option.voters:
-                return i
-        return None
-
-    def __repr__(self):
-        return (f"Poll(poll_id={self.poll_id!r}, question={self.question!r}, "
-                f"options={self.options!r}, creator={self.creator!r}, "
-                f"channel_id={self.channel_id!r}, anonymous={self.anonymous!r})")
-
-
-class PollManager:
-    def __init__(self):
-        self.polls: dict[str, Poll] = {}
-        self.poll_history: list[Poll] = []
-
-    @property
-    def history(self) -> list[Poll]:
-        return self.poll_history
-
-    @property
-    def total_polls(self) -> int:
-        return len(self.polls)
-
-    def create_poll(self, poll_id: float or int, question: str, options: list[str],
-                    creator: str, channel_id: str, creation_date: str,
-                    max_option_count: int, anonymous: bool = False, can_add_choices: bool = False) -> Poll:
-        poll = Poll(poll_id, question, options, creator, channel_id, creation_date,
-                   max_option_count, anonymous, can_add_choices)
-        self.polls[poll_id] = poll
-        self.poll_history.append(poll)
-        return poll
-
-    def get_poll(self, poll_id: str) -> Optional[Poll]:
-        return self.polls.get(poll_id)
-
-    def filter_polls_by_question(self, search: str, min_score: int = 1, max_results: int = 10):
-        scored = [
-            (poll, letter_match_score(search, poll.question))
-            for poll in self.polls.values()
-        ]
-        filtered = [item for item in scored if item[1] >= min_score]
-        filtered.sort(key=lambda x: (-x[1], x[0].question))
-        return [item[0] for item in filtered[:max_results]]
-
-    def get_filter_options(self, search: str, max_results: int = 10):
-        matching_polls = self.filter_polls_by_question(search, max_results=max_results)
-        return [(poll.question, poll.poll_id) for poll in matching_polls]
+Base.metadata.create_all(engine)

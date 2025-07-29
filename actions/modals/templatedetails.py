@@ -1,19 +1,10 @@
-def all_results(poll, channel_id):
+def show_mc_template_details(poll):
     modal_blocks = [
-        {
-            "type": "context",
-            "elements": [
-                {
-                    "type": "mrkdwn",
-                    "text": f"<@{poll.creator}> has a question for the members of <#{channel_id}>",
-                }
-            ]
-        },
         {
             "type": "section",
             "text": {
                 "type": "plain_text",
-                "text": "Results",
+                "text": "Template Details",
                 "emoji": True
             }
         },
@@ -27,9 +18,16 @@ def all_results(poll, channel_id):
                 "text": f"{poll.question}",
                 "emoji": True
             }
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "plain_text",
+                "text": "Options preview:",
+                "emoji": True
+            }
         }
     ]
-
     for i, option in enumerate(poll.options):
         if option.text == 'Add your responses!':
             continue
@@ -64,20 +62,11 @@ def all_results(poll, channel_id):
                 "type": "button",
                 "text": {
                     "type": "plain_text",
-                    "text": "View History",
-                    "emoji": True
-                },
-                "action_id": "back_to_history"
-            },
-            {
-                "type": "button",
-                "text": {
-                    "type": "plain_text",
-                    "text": "Recreate Poll",
+                    "text": "Create Poll",
                     "emoji": True
                 },
                 "value": f"{poll.poll_id}",
-                "action_id": f"previous-poll-998"
+                "action_id": f"previous-poll-996"
             }
         ]
 
@@ -97,24 +86,15 @@ def all_results(poll, channel_id):
         "blocks": modal_blocks
     }
 
-def all_open_ended(poll, channel_id):
+def show_oe_template_details(poll):
     fields = []
 
     modal_blocks = [
         {
-            "type": "context",
-            "elements": [
-                {
-                    "type": "mrkdwn",
-                    "text": f"<@{poll.creator}> has a question for the members of <#{channel_id}>",
-                }
-            ]
-        },
-        {
             "type": "section",
             "text": {
                 "type": "plain_text",
-                "text": "Responses",
+                "text": "Template Details",
                 "emoji": True
             }
         },
@@ -164,20 +144,11 @@ def all_open_ended(poll, channel_id):
                 "type": "button",
                 "text": {
                     "type": "plain_text",
-                    "text": "View History",
-                    "emoji": True
-                },
-                "action_id": "back_to_history"
-            },
-            {
-                "type": "button",
-                "text": {
-                    "type": "plain_text",
-                    "text": "Recreate Poll",
+                    "text": "Create Poll",
                     "emoji": True
                 },
                 "value": f"{poll.poll_id}",
-                "action_id": f"previous-poll-999"
+                "action_id": f"previous-poll-997"
             }
         ]
     })

@@ -1,4 +1,5 @@
 import json
+from models import Poll, PollOption
 
 def create_add_choices():
     modal = {

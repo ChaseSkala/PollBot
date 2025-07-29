@@ -25,7 +25,8 @@ def convert_unix_to_date(timestamp):
 
 def change_response(response_num, new_response, poll):
     if new_response == 'REMOVE':
-        del poll.options[response_num]
+        option_to_remove = poll.options[response_num]
+        poll.options.remove(option_to_remove)
     else:
         poll.options[response_num].text = new_response
     return "error"
@@ -69,4 +70,4 @@ def sort_polls(polls, sort_by):
     elif sort_by == "alphabetical":
         return sorted(polls, key=lambda p: p.question.lower())
     else:
-        return polls  # Default: no sorting
+        return polls
