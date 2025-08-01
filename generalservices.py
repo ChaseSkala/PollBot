@@ -32,13 +32,8 @@ def change_response(response_num, new_response, poll):
     return "error"
 
 def can_add_more_options(poll, user_id):
-    if user_id not in poll.user_option_count:
-        poll.user_option_count[user_id] = 1
-        return True
-    if poll.user_option_count[user_id] >= int(poll.max_option_count) + 1:
-        return False
-    else:
-        return True
+    current_count = poll.user_option_count.get(user_id, 0)
+    return current_count < int(poll.max_option_count)
 
 def letter_match_score(search: str, question: str) -> int:
     search = search.lower()

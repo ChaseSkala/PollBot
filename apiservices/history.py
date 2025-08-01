@@ -1,5 +1,4 @@
 from actions.modals.history import show_poll_history
-from models import Poll, PollOption
 
 
 def register_get_history(app, session):

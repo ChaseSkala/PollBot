@@ -7,9 +7,11 @@ from apiservices.creation import register_poll_command, register_open_ended, reg
     register_open_templates
 from apiservices.history import register_get_history, register_create_from_previous_poll, register_back_to_history
 from apiservices.modifications import register_add_option, register_adding_option, register_votes, \
-    register_dropdown_vote, register_edit_response, register_editing_response, register_submit_edit_response
+    register_dropdown_vote, register_edit_response, register_editing_response, register_submit_edit_response, \
+    register_submit_bad_option
 from apiservices.services import register_poll_button, register_results, register_view_all_open_ended, \
-    register_search_action, register_show_search_action, register_sort_action
+    register_search_action, register_show_search_action, register_sort_action, register_close_poll, \
+    register_begin_option_rating, register_create_option_rating
 from apiservices.templates import register_open_template_types, register_create_mc_template, \
     register_create_oe_template, register_store_mc_template, register_view_all_templates, register_store_oe_template
 from dotenv import load_dotenv
@@ -68,6 +70,10 @@ register_create_oe_template(app)
 register_store_mc_template(app, session)
 register_store_oe_template(app, session)
 register_view_all_templates(app, session)
+register_close_poll(app, session)
+register_begin_option_rating(app, session)
+register_create_option_rating(app, session)
+register_submit_bad_option(app, session)
 
 if __name__ == "__main__":
     SocketModeHandler(app, SLACK_APP_TOKEN).start()

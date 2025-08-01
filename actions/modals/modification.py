@@ -1,5 +1,4 @@
 import json
-from models import Poll, PollOption
 
 def create_add_choices():
     modal = {
@@ -160,4 +159,41 @@ def editing_response(allowed: bool, ts, channel, response_num):
                 }
             ]
         }
+    return modal
+
+def option_warning(rating, user_input, channel, ts):
+    modal = {
+        "type": "modal",
+        "callback_id": "submit-bad-option",
+        "private_metadata": json.dumps({
+        "channel": channel,
+        "ts": ts,
+        "option_text": user_input
+        }),
+        "title": {
+            "type": "plain_text",
+            "text": "Option Warning",
+            "emoji": True
+        },
+        "submit": {
+            "type": "plain_text",
+            "text": "Submit",
+            "emoji": True
+        },
+        "close": {
+            "type": "plain_text",
+            "text": "Cancel",
+            "emoji": True
+        },
+        "blocks": [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"Your option is often rated poorly ({rating} :star:), do you still want to add it?",
+                    "emoji": True
+                }
+            }
+        ]
+    }
     return modal

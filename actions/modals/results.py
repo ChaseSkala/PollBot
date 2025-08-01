@@ -82,6 +82,21 @@ def all_results(poll, channel_id):
         ]
 
     })
+    modal_blocks.append({
+        "type": "actions",
+        "elements": [
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Close Poll",
+                    "emoji": True
+                },
+                "action_id": "close-poll",
+                "value": f"{poll.poll_id}"
+            }
+        ]
+    })
     return {
         "type": "modal",
         "title": {
@@ -181,11 +196,124 @@ def all_open_ended(poll, channel_id):
             }
         ]
     })
+    modal_blocks.append({
+        "type": "actions",
+        "elements": [
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Close Poll",
+                    "emoji": True
+                },
+                "action_id": "close-poll",
+                "value": f"{poll.poll_id}"
+            }
+        ]
+    })
     return {
         "type": "modal",
         "title": {
             "type": "plain_text",
             "text": "Poll Responses",
+            "emoji": True
+        },
+        "close": {
+            "type": "plain_text",
+            "text": "Cancel",
+            "emoji": True
+        },
+        "blocks": modal_blocks
+    }
+
+def render_poll_option_rating(poll):
+    modal_blocks = [
+        {
+			"type": "header",
+			"text": {
+				"type": "plain_text",
+				"text": f"Rating options from poll: {poll.question}",
+				"emoji": True
+			}
+		},
+		{
+			"type": "divider"
+		}
+    ]
+
+    for i, option in enumerate(poll.options):
+        if option.text == 'Add your responses!':
+            continue
+        modal_blocks.append(
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"{option.text}"
+                }
+            }
+        )
+        modal_blocks.append({
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "1",
+                        "emoji": True
+                    },
+                    "action_id": "option_rated1",
+                    "value": f"{option.text}"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "2",
+                        "emoji": True
+                    },
+                    "action_id": "option_rated2",
+                    "value": f"{option.text}"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "3",
+                        "emoji": True
+                    },
+                    "action_id": "option_rated3",
+                    "value": f"{option.text}"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "4",
+                        "emoji": True
+                    },
+                    "action_id": "option_rated4",
+                    "value": f"{option.text}"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "5",
+                        "emoji": True
+                    },
+                    "action_id": "option_rated5",
+                    "value": f"{option.text}"
+                },
+            ]
+        })
+        modal_blocks.append({"type": "divider"})
+    return {
+        "type": "modal",
+        "title": {
+            "type": "plain_text",
+            "text": "Option Rating",
             "emoji": True
         },
         "close": {

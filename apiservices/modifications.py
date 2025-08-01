@@ -1,11 +1,13 @@
 import json
 import re
 
-from actions.modals.modification import create_add_choices, which_response_to_edit, editing_response
+from actions.modals.modification import create_add_choices, which_response_to_edit, editing_response, option_warning
 from actions.rendering.options import render_open_ended_options, render_multiple_choice_options
 from generalservices import create_id, can_add_more_options, change_response
+from sqlalchemy import func
+from sqlalchemy.orm.attributes import flag_modified
+from models import Poll, PollOption, Rating
 
-from models import Poll, PollOption
 
 def register_add_option(app):
     @app.action("add-option")
@@ -32,6 +34,32 @@ def register_adding_option(app, session):
         user_id = body['user']['id']
         user_info = client.users_info(user=user_id)
         user_name = user_info["user"]["name"]
+        option_text = session.query(Rating).filter_by(option_text=user_input).first()
+
+        if option_text:
+            rating_avg = session.query(
+                Rating.option_text,
+                func.avg(Rating.rating).label('average_rating')
+            ).filter(
+                Rating.option_text == user_input
+            ).group_by(Rating.option_text).first()
+
+            if rating_avg:
+                avg_rating = float(rating_avg.average_rating)
+                if avg_rating <=3:
+                    client.views_open(
+                        trigger_id=body["trigger_id"],
+                        view=option_warning(avg_rating, user_input, channel, ts),
+                    )
+                    return
+
+        if poll.closed:
+            client.chat_postEphemeral(
+                channel=channel,
+                user=user_id,
+                text="This poll is closed.",
+            )
+
         if can_add_more_options(poll, user_id):
             new_option = PollOption(
                 text=user_input,
@@ -50,7 +78,7 @@ def register_adding_option(app, session):
                 poll.user_option_count[user_id] += 1
             else:
                 poll.user_option_count[user_id] = 1
-
+            flag_modified(poll, 'user_option_count')
             session.commit()
 
             if poll.options[0].text == 'Add your responses!':
@@ -70,6 +98,61 @@ def register_adding_option(app, session):
                 text=f"You cannot add any more options!",
             )
 
+def register_submit_bad_option(app, session):
+    @app.view("submit-bad-option")
+    def handle_submit_bad_option(client, ack, body, view):
+        ack()
+
+        private_metadata = body["view"]["private_metadata"]
+        data = json.loads(private_metadata)
+        option_text = data["option_text"]
+        channel= data['channel']
+        ts = data['ts']
+        user_id = body['user']['id']
+        user_info = client.users_info(user=user_id)
+        user_name = user_info["user"]["name"]
+        new_option = PollOption(
+            text=option_text,
+            votes=1,
+            voters={user_id: user_name},
+            response_user_ids={}
+        )
+        poll_id = create_id(ts)
+        poll = session.query(Poll).filter_by(poll_id=poll_id).first()
+        poll.options.append(new_option)
+
+        if not can_add_more_options(poll, user_id):
+            client.chat_postEphemeral(
+                channel=channel,
+                user=user_id,
+                text=f"You cannot add any more options!",
+            )
+            return
+
+        response_num = len(poll.options)
+        new_option.add_user(user_id, response_num)
+
+        if not hasattr(poll, 'user_option_count') or poll.user_option_count is None:
+            poll.user_option_count = {}
+
+        if user_id in poll.user_option_count:
+            poll.user_option_count[user_id] += 1
+        else:
+            poll.user_option_count[user_id] = 1
+        flag_modified(poll, 'user_option_count')
+        session.commit()
+
+        if poll.options[0].text == 'Add your responses!':
+            blocks = render_open_ended_options(poll)
+        else:
+            blocks = render_multiple_choice_options(poll)
+        client.chat_update(
+            channel=channel,
+            ts=ts,
+            text="Poll update",
+            blocks=blocks
+        )
+
 def register_votes(app, session):
     @app.action(re.compile(r"actionId-\d+"))
     def handle_vote(client, ack, body, action):
@@ -80,7 +163,6 @@ def register_votes(app, session):
         channel = body['channel']['id']
         poll_id = create_id(ts)
         poll = session.query(Poll).filter_by(poll_id=poll_id).first()
-
         if index < 0 or index >= len(poll.options):
             client.chat_postEphemeral(
                 channel=channel,
@@ -94,7 +176,12 @@ def register_votes(app, session):
         username = (user_info["user"]["profile"].get("display_name") or
                     user_info["user"].get("real_name") or
                     user_info["user"]["name"])
-
+        if poll.closed:
+            client.chat_postEphemeral(
+                channel=channel,
+                user=user_id,
+                text="This poll is closed.",
+            )
         option = poll.options[index]
 
         if user_id in option.voters:
@@ -124,7 +211,6 @@ def register_dropdown_vote(app, session):
         channel = body['channel']['id']
         poll_id = create_id(ts)
         poll = session.query(Poll).filter_by(poll_id=poll_id).first()
-
         if index < 0 or index >= len(poll.options):
             client.chat_postEphemeral(
                 channel=channel,
@@ -138,7 +224,12 @@ def register_dropdown_vote(app, session):
         username = (user_info["user"]["profile"].get("display_name") or
                     user_info["user"].get("real_name") or
                     user_info["user"]["name"])
-
+        if poll.closed:
+            client.chat_postEphemeral(
+                channel=channel,
+                user=user_id,
+                text="This poll is closed.",
+            )
         option = poll.options[index]
 
         if user_id in option.voters:
@@ -184,6 +275,12 @@ def register_editing_response(app, session):
         poll_id = create_id(ts)
         poll = session.query(Poll).filter_by(poll_id=poll_id).first()
         user_id = body["user"]["id"]
+        if poll.closed:
+            client.chat_postEphemeral(
+                channel=channel,
+                user=user_id,
+                text="This poll is closed.",
+            )
         response_num = None
         for block_id, block_data in values.items():
             if "which-response-to-edit" in block_data:
@@ -214,7 +311,7 @@ def register_editing_response(app, session):
 
 def register_submit_edit_response(app, session):
     @app.view("submit-edit-response")
-    def handle_response_change(client, ack, view):
+    def handle_response_change(client, ack, body, view):
         ack()
         private_metadata = view.get("private_metadata", "")
         metadata = json.loads(private_metadata) if private_metadata else {}
@@ -224,6 +321,13 @@ def register_submit_edit_response(app, session):
         values = view["state"]["values"]
         poll_id = create_id(ts)
         poll = session.query(Poll).filter_by(poll_id=poll_id).first()
+        user_id = body["user"]["id"]
+        if poll.closed:
+            client.chat_postEphemeral(
+                channel=channel,
+                user=user_id,
+                text="This poll is closed.",
+            )
 
         new_response = None
         for block_id, block_data in values.items():

@@ -1,6 +1,6 @@
 from generalservices import sort_polls
 
-from models import Poll, PollOption
+from models import Poll
 
 def show_poll_history(session, sort_by="newest"):
     modal_blocks = []

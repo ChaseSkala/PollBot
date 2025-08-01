@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, JSON
 from sqlalchemy.orm import declarative_base, relationship
 
-db_url = "sqlite:///C:/Users/chaseskala/Desktop/PollDatabase/pollDatabase.db"
+db_url = "mysql+pymysql://admin:bZl4BhmBhQtaz6PHDkRq@rodgerdata.chy2cwwqqm77.us-east-2.rds.amazonaws.com:3306/pollbot"
 
 engine = create_engine(db_url)
 
@@ -12,12 +12,11 @@ class PollOption(Base):
     __tablename__ = "poll_options"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    text = Column(String, nullable=False)
+    text = Column(String(255), nullable=False)
     votes = Column(Integer, default=0)
     voters = Column(JSON, default=dict)
     response_user_ids = Column(JSON, default=dict)
-    poll_id = Column(String, ForeignKey("polls.poll_id"))
-
+    poll_id = Column(String(255), ForeignKey("polls.poll_id"))
 
     poll = relationship("Poll", back_populates="options")
 
@@ -45,16 +44,17 @@ class PollOption(Base):
 class Poll(Base):
     __tablename__ = "polls"
 
-    poll_id = Column(String, primary_key=True)
-    question = Column(String, nullable=False)
-    creator = Column(String, nullable=False)
-    channel_id = Column(String, nullable=False)
-    creation_date = Column(String, nullable=False)
+    poll_id = Column(String(255), primary_key=True)
+    question = Column(String(255), nullable=False)
+    creator = Column(String(255), nullable=False)
+    channel_id = Column(String(255), nullable=False)
+    creation_date = Column(String(255), nullable=False)
     max_option_count = Column(Integer, nullable=False)
     anonymous = Column(Boolean, default=False)
     can_add_choices = Column(Boolean, default=False)
     is_template = Column(Boolean, default=False)
     user_option_count = Column(JSON, default=dict)
+    closed = Column(Boolean, default=False)
 
     options = relationship("PollOption", back_populates="poll", cascade="all, delete-orphan")
 
@@ -82,5 +82,13 @@ class Poll(Base):
     @property
     def is_active(self) -> bool:
         return self.total_votes > 0
+
+class Rating(Base):
+    __tablename__ = "ratings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(255), nullable=False)
+    option_text = Column(String(255), nullable=False)
+    rating = Column(Integer, nullable=False)
 
 Base.metadata.create_all(engine)

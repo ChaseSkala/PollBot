@@ -1,11 +1,11 @@
 import re
 
 from actions.modals.history import show_poll_history
-from actions.modals.results import all_open_ended, all_results
+from actions.modals.results import all_open_ended, all_results, render_poll_option_rating
 from actions.modals.templatedetails import show_oe_template_details, show_mc_template_details
 from generalservices import create_id
 
-from models import Poll
+from models import Poll, Rating
 
 def register_poll_button(app, session):
     @app.action(re.compile(r"poll_button-\d+"))
@@ -128,3 +128,78 @@ def register_sort_action(app, session):
             view_id=body["view"]["id"],
             view=updated_modal
         )
+
+def register_close_poll(app, session):
+    @app.action("close-poll")
+    def handle_close_poll(client, ack, body, logger):
+        ack()
+
+        poll_id = body["actions"][0]["value"]
+        user_id = body["user"]["id"]
+        result = client.conversations_open(users=[user_id])
+        channel_id = result["channel"]["id"]
+        poll = session.query(Poll).filter_by(poll_id=poll_id).first()
+
+        if poll:
+            poll.closed = True
+            session.commit()
+            logger.info(f"Poll {poll_id} closed.")
+        else:
+            logger.error(f"Poll {poll_id} not found.")
+
+        client.chat_postMessage(
+            channel=channel_id,
+            text="The poll is now closed. If you want to rate any of the options in the poll, press the button below.",
+            blocks=[
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "The poll is now closed. If you want to rate any of the options in the poll, press the button below."
+                    },
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {"type": "plain_text", "text": "Start rating"},
+                            "action_id": "rate-poll-options",
+                            "value": f"{poll_id}"
+                        }
+                    ]
+                }
+            ]
+        )
+
+def register_begin_option_rating(app, session):
+    @app.action("rate-poll-options")
+    def handle_begin_option_rating(client, ack, body):
+        ack()
+        channel = body['channel']['id']
+        poll_id = body["actions"][0]["value"]
+        poll = session.query(Poll).filter_by(poll_id=poll_id).first()
+        modal = render_poll_option_rating(poll)
+        modal["private_metadata"] = channel
+        client.views_open(
+            trigger_id=body["trigger_id"],
+            view=modal,
+        )
+
+def register_create_option_rating(app, session):
+    @app.action(re.compile("option_rated[1-5]"))
+    def handle_create_option_rating(client, ack, body, action, logger):
+        ack()
+
+        user_id = body["user"]["id"]
+        action_id = action["action_id"]
+        rating = action_id[-1]
+        option = action["value"]
+
+        rating = Rating(
+            user_id=user_id,
+            option_text=option,
+            rating=int(rating)
+        )
+        session.add(rating)
+        session.commit()
