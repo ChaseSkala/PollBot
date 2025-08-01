@@ -2,12 +2,16 @@ from generalservices import sort_polls
 
 from models import Poll
 
-def show_poll_history(session, sort_by="newest"):
+def show_poll_history(session, sort_by="newest", page=0):
     modal_blocks = []
-
     polls = session.query(Poll).filter_by(is_template=False).all()
+    sorted_polls = sort_polls(polls, sort_by)
+    polls_per_page = 10
+    start = page * polls_per_page
+    end = start + polls_per_page
+    paginated_polls = sorted_polls[start:end]
 
-    if not polls:
+    if not paginated_polls:
         modal_blocks.append({
             "type": "header",
             "text": {
@@ -56,9 +60,7 @@ def show_poll_history(session, sort_by="newest"):
         ]
     })
 
-    sorted_polls = sort_polls(polls, sort_by)
-
-    for i, poll in enumerate(sorted_polls):
+    for i, poll in enumerate(paginated_polls):
 
         if poll.options[0].text == 'Add your responses!':
             modal_blocks.append({
@@ -150,6 +152,24 @@ def show_poll_history(session, sort_by="newest"):
                 ]
             })
             modal_blocks.append({"type": "divider"})
+    pagination_elements = []
+    if page > 0:
+        pagination_elements.append({
+            "type": "button",
+            "text": {"type": "plain_text", "text": "Previous"},
+            "action_id": "prev_page"
+        })
+    if end < len(sorted_polls):
+        pagination_elements.append({
+            "type": "button",
+            "text": {"type": "plain_text", "text": "Next"},
+            "action_id": "next_page"
+        })
+    if pagination_elements:
+        modal_blocks.append({
+            "type": "actions",
+            "elements": pagination_elements
+        })
     return {
         "type": "modal",
         "title": {

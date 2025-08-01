@@ -100,7 +100,7 @@ def register_adding_option(app, session):
 
 def register_submit_bad_option(app, session):
     @app.view("submit-bad-option")
-    def handle_submit_bad_option(client, ack, body, view):
+    def handle_submit_bad_option(client, ack, body):
         ack()
 
         private_metadata = body["view"]["private_metadata"]

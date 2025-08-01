@@ -5,7 +5,8 @@ import logging
 from apiservices.creation import register_poll_command, register_open_ended, register_multiple_choice, \
     register_create_open_ended_poll, register_create_multiple_choice_poll, register_create_previous_poll, \
     register_open_templates
-from apiservices.history import register_get_history, register_create_from_previous_poll, register_back_to_history
+from apiservices.history import register_get_history, register_create_from_previous_poll, register_back_to_history, \
+    register_handle_next_page, register_handle_previous_page
 from apiservices.modifications import register_add_option, register_adding_option, register_votes, \
     register_dropdown_vote, register_edit_response, register_editing_response, register_submit_edit_response, \
     register_submit_bad_option
@@ -74,6 +75,8 @@ register_close_poll(app, session)
 register_begin_option_rating(app, session)
 register_create_option_rating(app, session)
 register_submit_bad_option(app, session)
+register_handle_next_page(app, session)
+register_handle_previous_page(app, session)
 
 if __name__ == "__main__":
     SocketModeHandler(app, SLACK_APP_TOKEN).start()
