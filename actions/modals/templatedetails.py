@@ -1,4 +1,11 @@
 def show_mc_template_details(poll):
+    """
+    Shows the details of the multiple choice poll template.
+
+    :param poll: The poll to be rendered.
+    :type poll: Poll
+    :returns: A modal.
+    """
     modal_blocks = [
         {
             "type": "section",
@@ -86,7 +93,15 @@ def show_mc_template_details(poll):
         "blocks": modal_blocks
     }
 
+
 def show_oe_template_details(poll):
+    """
+    Shows the details of the open-ended poll template.
+
+    :param poll: The poll to be rendered.
+    :type poll: Poll
+    :returns: A modal.
+    """
     fields = []
 
     modal_blocks = [

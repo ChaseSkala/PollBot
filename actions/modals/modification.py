@@ -1,6 +1,10 @@
 import json
 
 def create_add_choices():
+    """
+    Creates a menu for the user to add a choice to the poll.
+    :returns: A modal.
+    """
     modal = {
         "type": "modal",
         "callback_id": "adding-option",
@@ -37,7 +41,17 @@ def create_add_choices():
     }
     return modal
 
+
 def which_response_to_edit(ts, channel):
+    """
+    Creates a menu that prompts the user which response within the poll that they want to edit.
+
+    :param ts: The current timestamp
+    :type ts: int
+    :param channel: The channel id where the command takes place.
+    :type channel: str
+    :returns: A modal.
+    """
     modal = {
         "type": "modal",
         "callback_id": "editing-response",
@@ -85,7 +99,23 @@ def which_response_to_edit(ts, channel):
     }
     return modal
 
+
 def editing_response(allowed: bool, ts, channel, response_num):
+    """
+    Asks the user what they want to edit the response to.
+
+    Creates either a modal that asks the user what they want to change the response to,
+    or prompts them that they cannot edit the response that they have chosen.
+
+    :param allowed: Checks if the user is allowed to edi the response.
+    :type allowed: bool
+    :param ts: The current timestamp.
+    :type ts: int
+    :param channel: The channel id where the command takes place.
+    :type channel: str
+    :param response_num: The key that identifies what response the user wants to edit.
+    :returns: A modal.
+    """
 
     if allowed:
         modal = {
@@ -161,7 +191,21 @@ def editing_response(allowed: bool, ts, channel, response_num):
         }
     return modal
 
+
 def option_warning(rating, user_input, channel, ts):
+    """
+    Warns the user if they inputted an often rated badly option.
+
+    :param rating: The average rating of the warned option.
+    :type rating: float
+    :param user_input: The option that the user inputted.
+    :type user_input: str
+    :param channel: The channel id where the command takes place.
+    :type channel: str
+    :param ts: The current timestamp.
+    :type ts: int
+    :returns: A modal.
+    """
     modal = {
         "type": "modal",
         "callback_id": "submit-bad-option",

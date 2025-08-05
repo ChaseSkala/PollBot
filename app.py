@@ -1,3 +1,15 @@
+"""
+PollBot
+=======
+
+This Slack app creates and manages polls within a slack workspace.
+It uses a MySQL database with SQLAlchemy in order to manage its polls.
+
+:Author: Chase Skala
+:Date: 2025-08-04
+:License: None
+"""
+
 import os
 import logging
 

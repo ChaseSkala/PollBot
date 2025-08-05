@@ -1,4 +1,13 @@
 def all_results(poll, channel_id):
+    """
+    Renders the results of all options in a multiple-choice poll.
+
+    :param poll: The poll to be rendered.
+    :type poll: Poll
+    :param channel_id: The channel id where the command has taken place.
+    :type channel_id: str
+    :returns: A modal
+    """
     modal_blocks = [
         {
             "type": "context",
@@ -112,7 +121,16 @@ def all_results(poll, channel_id):
         "blocks": modal_blocks
     }
 
+
 def all_open_ended(poll, channel_id):
+    """
+    Renders the results of all options in an open-ended poll.
+    :param poll: The poll to be rendered.
+    :type poll: Poll
+    :param channel_id: The channel id where the command has taken place.
+    :type channel_id: str
+    :returns: A modal.
+    """
     fields = []
 
     modal_blocks = [
@@ -226,7 +244,15 @@ def all_open_ended(poll, channel_id):
         "blocks": modal_blocks
     }
 
+
 def render_poll_option_rating(poll):
+    """
+    Renders the ratings of options in a past poll.
+
+    :param poll: The poll to be rendered.
+    :type poll: Poll
+    :returns: A modal.
+    """
     modal_blocks = [
         {
 			"type": "header",

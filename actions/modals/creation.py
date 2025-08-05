@@ -1,4 +1,8 @@
 def create_home_menu():
+    """
+    Creates the home menu.
+    :returns: A Modal.
+    """
     blocks = {
         "type": "modal",
         "callback_id": "home-menu",
@@ -62,7 +66,12 @@ def create_home_menu():
     }
     return blocks
 
+
 def create_multiple_choice():
+    """
+    Creates the multiple choice menu.
+    :returns: A Modal.
+    """
     blocks = {
         "type": "modal",
         "callback_id": "multiple-choice",
@@ -154,7 +163,12 @@ def create_multiple_choice():
     }
     return blocks
 
+
 def create_open_ended():
+    """
+    Creates the open-ended menu.
+    :returns: A modal.
+    """
     blocks = {
         "type": "modal",
         "callback_id": "open-ended",
@@ -229,7 +243,12 @@ def create_open_ended():
     }
     return blocks
 
+
 def open_templates():
+    """
+    Creates the template menu.
+    :returns: A modal.
+    """
     blocks = {
         "title": {
             "type": "plain_text",

@@ -6,6 +6,15 @@ from generalservices import create_id, convert_unix_to_date
 from models import Poll, PollOption
 
 def register_poll_command(app):
+    """
+    Handles the slack command "/poll"
+
+    Opens a modal for the user, prompting the user with the home menu modal.
+
+    :param app: The Slack app object.
+    :type app: Slack app.
+    :returns: A modal.
+    """
     @app.command("/poll")
     def handle_poll_command(client, ack, command: dict):
         ack()
@@ -16,7 +25,17 @@ def register_poll_command(app):
             view=modal,
         )
 
+
 def register_open_ended(app):
+    """
+    Handles the slack action "open-ended"
+
+    Opens a modal for the user, prompting the user with the open-ended poll creation modal.
+
+    :param app: The Slack app object.
+    :type app: Slack app.
+    :returns: A modal.
+    """
     @app.action("open-ended")
     def handle_open_ended(client, ack, body: dict):
         ack()
@@ -27,7 +46,19 @@ def register_open_ended(app):
             view=modal,
         )
 
+
 def register_create_open_ended_poll(app, session):
+    """
+    Handles the slack view "open-ended"
+
+    Creates a poll given information gathered from register_open_ended()
+
+    :param app: The Slack app object.
+    :type app: Slack app.
+    :param session: The SQLAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: Posts a poll to the slack workspace.
+    """
     @app.view("open-ended")
     def create_open_ended_poll(client, ack, body, view, logger):
         ack()
@@ -89,7 +120,17 @@ def register_create_open_ended_poll(app, session):
             blocks=render_open_ended(poll)
         )
 
+
 def register_multiple_choice(app):
+    """
+    Handles the slack action "multiple-choice"
+
+    Opens a modal for the user, prompting the user with the multiple choice poll creation modal.
+
+    :param app: The Slack app object.
+    :type app: Slack app.
+    :returns: A modal.
+    """
     @app.action("multiple-choice")
     def handle_multiple_choice(client, ack, body: dict):
         ack()
@@ -100,7 +141,19 @@ def register_multiple_choice(app):
             view=modal,
         )
 
+
 def register_create_multiple_choice_poll(app, session):
+    """
+    Handles the slack view "multiple-choice"
+
+    Creates a poll given information gathered from register_multiple_choice()
+
+    :param app: The Slack app object.
+    :type app: Slack app.
+    :param session: The SQLAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: Posts a poll to the slack workspace.
+    """
     @app.view("multiple-choice")
     def create_multiple_choice_poll(client, ack, body, view,logger):
         ack()
@@ -169,7 +222,19 @@ def register_create_multiple_choice_poll(app, session):
             blocks=render_multiple_choice(poll)
         )
 
+
 def register_create_previous_poll(app, session):
+    """
+    Handles the slack regex action "previous-poll-\d+"
+
+    Creates a poll given information gathered a past poll inside the Poll Database.
+
+    :param app: The Slack app object.
+    :type app: Slack app.
+    :param session: The SQLAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: Posts a poll to the slack workspace.
+    """
     @app.action(re.compile(r"previous-poll-\d+"))
     def create_previous_poll(client, ack, body, action):
         ack()

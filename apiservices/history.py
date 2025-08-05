@@ -1,7 +1,20 @@
 from actions.modals.history import show_poll_history
 import json
 
+
 def register_get_history(app, session):
+    """
+    Handles the Slack command "/history"
+
+    Opens a modal for the user, this modal consists of all polls inside the database.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: The SQLAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: A modal.
+    """
+
     @app.command("/history")
     def get_history(client, ack, command: dict):
         ack()
@@ -13,7 +26,20 @@ def register_get_history(app, session):
             view=modal,
         )
 
+
 def register_create_from_previous_poll(app, session):
+    """
+    Handles the Slack action "create-from-previous-poll"
+
+    This is an alternative to generating register_get_history()
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: A modal.
+    """
+
     @app.action("create-from-previous-poll")
     def create_from_previous_poll(client, ack, body: dict):
         ack()
@@ -25,7 +51,20 @@ def register_create_from_previous_poll(app, session):
             view=modal,
         )
 
+
 def register_back_to_history(app, session):
+    """
+    Handles the Slack action "back-to-history"
+
+    This is an alternative to generating register_get_history()
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: A modal.
+    """
+
     @app.action("back_to_history")
     def handle_back_to_history(client, ack, body, logger):
         ack()
@@ -40,7 +79,20 @@ def register_back_to_history(app, session):
         except Exception as e:
             logger.error(f"Error updating modal: {e}")
 
+
 def register_handle_next_page(app, session):
+    """
+    Handles the Slack action "next_page"
+
+    This navigates the user to the next page inside of history.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: A modal.
+    """
+
     @app.action("next_page")
     def handle_next_page(ack, body, client):
         ack()
@@ -54,7 +106,20 @@ def register_handle_next_page(app, session):
             view=modal
         )
 
+
 def register_handle_previous_page(app, session):
+    """
+    Handles the Slack action "prev_page"
+
+    This navigates the user to the previous page inside of history.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: A modal.
+    """
+
     @app.action("prev_page")
     def handle_prev_page(ack, body, client):
         ack()

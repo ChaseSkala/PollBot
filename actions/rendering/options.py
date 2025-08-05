@@ -1,6 +1,13 @@
-from actions.rendering.rendering import *
+from actions.rendering.rendering import render_multiple_choice
 
 def render_multiple_choice_options(poll):
+    """
+    Renders the multiple choice options for a poll.
+
+    :param poll: The poll to be rendered.
+    :type poll: Poll.
+    :returns: A slack block object.
+    """
     blocks = render_multiple_choice(poll)
     fields = []
 
@@ -52,6 +59,13 @@ def render_multiple_choice_options(poll):
 
 
 def render_open_ended_options(poll):
+    """
+    Renders the open-ended options for a poll.
+
+    :param poll: The poll to be rendered.
+    :type poll: Poll.
+    :returns: A slack block object.
+    """
     button_elements = []
     response_total = 0
     blocks = [

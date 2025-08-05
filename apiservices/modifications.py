@@ -10,6 +10,16 @@ from models import Poll, PollOption, Rating
 
 
 def register_add_option(app):
+    """
+    Handles the Slack action "add-option"
+
+    Creates a modal prompting the user with the ability to add an option to the poll.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :return:
+    """
+
     @app.action("add-option")
     def handle_choice_added(client, ack, body: dict):
         ack()
@@ -22,7 +32,20 @@ def register_add_option(app):
             view=modal,
         )
 
+
 def register_adding_option(app, session):
+    """
+    Handles the Slack view "adding-option"
+
+    Adds the option that the user inputted.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SqlAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: Updates the options inside the Poll.
+    """
+
     @app.view("adding-option")
     def handle_add_option_added(client, ack, body: dict):
         ack()
@@ -46,7 +69,7 @@ def register_adding_option(app, session):
 
             if rating_avg:
                 avg_rating = float(rating_avg.average_rating)
-                if avg_rating <=3:
+                if avg_rating <= 3:
                     client.views_open(
                         trigger_id=body["trigger_id"],
                         view=option_warning(avg_rating, user_input, channel, ts),
@@ -98,7 +121,20 @@ def register_adding_option(app, session):
                 text=f"You cannot add any more options!",
             )
 
+
 def register_submit_bad_option(app, session):
+    """
+    Handles the Slack view "submit-bad-option"
+
+    Adds the option that the user inputted.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SqlAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: Updates the options inside the Poll.
+    """
+
     @app.view("submit-bad-option")
     def handle_submit_bad_option(client, ack, body):
         ack()
@@ -106,7 +142,7 @@ def register_submit_bad_option(app, session):
         private_metadata = body["view"]["private_metadata"]
         data = json.loads(private_metadata)
         option_text = data["option_text"]
-        channel= data['channel']
+        channel = data['channel']
         ts = data['ts']
         user_id = body['user']['id']
         user_info = client.users_info(user=user_id)
@@ -153,7 +189,19 @@ def register_submit_bad_option(app, session):
             blocks=blocks
         )
 
+
 def register_votes(app, session):
+    """
+    Handles the Slack regex action "actionId-\d+"
+
+    Adds the user's vote to their selected option.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SqlAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: Updates an options votes inside the Poll.
+    """
     @app.action(re.compile(r"actionId-\d+"))
     def handle_vote(client, ack, body, action):
         ack()
@@ -202,7 +250,19 @@ def register_votes(app, session):
             blocks=blocks
         )
 
+
 def register_dropdown_vote(app, session):
+    """
+   Handles the Slack action "poll_option_select"
+
+   Adds the user's vote to their selected option.
+
+   :param app: The Slack app.
+   :type app: Slack app.
+   :param session: A SqlAlchemy session object.
+   :type session: sqlalchemy.orm.session.Session
+   :returns: Updates an options votes inside the Poll.
+   """
     @app.action("poll_option_select")
     def handle_dropdown_vote(client, ack, body, action):
         ack()
@@ -250,7 +310,17 @@ def register_dropdown_vote(app, session):
             blocks=blocks
         )
 
+
 def register_edit_response(app):
+    """
+    Handles the Slack action "edit-response"
+
+    Creates a modal, prompting the user for which response they want to edit.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :returns: A modal.
+    """
     @app.action("edit-response")
     def handle_edit_response(client, ack, body, logger):
         ack()
@@ -263,7 +333,19 @@ def register_edit_response(app):
         )
         logger.info("view-all-open-ended")
 
+
 def register_editing_response(app, session):
+    """
+    Handles the Slack action "editing-response"
+
+    Verifies if the user is able to edit the response that they selected.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SqlAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: Updates the responses in a poll.
+    """
     @app.view("editing-response")
     def handle_editing_response(client, ack, body, view, logger):
         ack()
@@ -309,7 +391,19 @@ def register_editing_response(app, session):
             else:
                 continue
 
+
 def register_submit_edit_response(app, session):
+    """
+    Handles the Slack view "submit-edit-response"
+
+    Edits the response given the user's input.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SqlAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: Updates the responses in a poll.
+    """
     @app.view("submit-edit-response")
     def handle_response_change(client, ack, body, view):
         ack()

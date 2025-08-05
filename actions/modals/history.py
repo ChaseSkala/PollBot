@@ -3,6 +3,17 @@ from generalservices import sort_polls
 from models import Poll
 
 def show_poll_history(session, sort_by="newest", page=0):
+    """
+    Shows the history of past polls inside the database.
+
+    :param session: The sqlalchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :param sort_by: What the user wants to sort by.
+    :type sort_by: str
+    :param page: What page of history to show.
+    :type page int
+    :returns: A modal of previous Polls.
+    """
     modal_blocks = []
     polls = session.query(Poll).filter_by(is_template=False).all()
     sorted_polls = sort_polls(polls, sort_by)

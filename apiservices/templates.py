@@ -6,6 +6,15 @@ from models import Poll, PollOption
 
 
 def register_open_template_types(app):
+    """
+    Handles the Slack action "create-template"
+
+    Opens a modal for the user to choose between the different templates.
+
+    :param app: The Slack App.
+    :type app: SlackApp.
+    :returns: A modal.
+    """
     @app.action("create-template")
     def handle_open_template_types(client, ack, body):
         ack()
@@ -16,7 +25,19 @@ def register_open_template_types(app):
             view=modal,
         )
 
+
 def register_view_all_templates(app, session):
+    """
+    Handles the Slack action "view-templates"
+
+    Opens a modal displaying all created templates.
+
+    :param app: The Slack App.
+    :type app: SlackApp.
+    :param session: The SqlAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: A modal.
+    """
     @app.action("view-templates")
     def handle_view_all_templates(client, ack, body):
         ack()
@@ -27,7 +48,17 @@ def register_view_all_templates(app, session):
             view=modal,
         )
 
+
 def register_create_mc_template(app):
+    """
+    Handles the Slack action "multiple-choice-template"
+
+    Opens a modal allowing the user to create a multiple choice template.
+
+    :param app: The Slack App.
+    :type app: SlackApp.
+    :returns: A modal.
+    """
     @app.action("multiple-choice-template")
     def handle_create_mc_template(client, ack, body):
         ack()
@@ -38,7 +69,19 @@ def register_create_mc_template(app):
             view=modal,
         )
 
+
 def register_store_mc_template(app, session):
+    """
+    Handles the Slack view "mc-template-created"
+
+    Creates a multiple choice poll based on the user's selected template.
+
+    :param app: The Slack App.
+    :type app: SlackApp.
+    :param session: A SQLAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: A template stored in the database.
+    """
     @app.view("mc-template-created")
     def handle_store_template(client, ack, body, view, logger):
         ack()
@@ -100,6 +143,15 @@ def register_store_mc_template(app, session):
         session.commit()
 
 def register_create_oe_template(app):
+    """
+    Handles the Slack action "open-ended-template"
+
+    Opens a modal for the user to create an open-ended poll.
+
+    :param app: The Slack App.
+    :type app: SlackApp.
+    :returns: A modal.
+    """
     @app.action("open-ended-template")
     def handle_create_oe_template(client, ack, body):
         ack()
@@ -111,6 +163,17 @@ def register_create_oe_template(app):
         )
 
 def register_store_oe_template(app, session):
+    """
+    Handles the Slack view "oe-template-created"
+
+    Creates an open-ended template based on the user's selected template.
+
+    :param app: The Slack App.
+    :type app: SlackApp.
+    :param session: A SQLAlchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :returns: A template stored in the database.
+    """
     @app.view("oe-template-created")
     def handle_store_oe_template(client, ack, body, view, logger):
         ack()

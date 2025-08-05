@@ -7,7 +7,20 @@ from generalservices import create_id
 
 from models import Poll, Rating
 
+
 def register_poll_button(app, session):
+    """
+    Handles the Slack regex action "poll_button-\d+"
+
+    Creates a modal for a past poll based on whichever the button is attached to.
+
+    :param app: The Slack App.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: SQLAlchemy session.
+    :returns: Creates a modal.
+    """
+
     @app.action(re.compile(r"poll_button-\d+"))
     def handle_poll_button(client, ack, body, action, logger):
         ack()
@@ -38,7 +51,18 @@ def register_poll_button(app, session):
             view=modal,
         )
 
+
 def register_results(app, session):
+    """
+    Handles the Slack action "results"
+
+    Opens a modal for the user that displays the results of the poll.
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: SQLAlchemy session.
+    :returns: A modal.
+    """
     @app.action("results")
     def handle_results(client, ack, body, logger):
         ack()
@@ -54,7 +78,19 @@ def register_results(app, session):
         )
         logger.info("results")
 
+
 def register_view_all_open_ended(app, session):
+    """
+    Handles the Slack action "view-all-open-ended"
+
+    Opens a modal for the user that displays the results of an open-ended poll.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: SQLAlchemy session.
+    :returns: A modal.
+    """
     @app.action("view-all-open-ended")
     def handle_view_all_open_ended(client, ack, body, logger):
         ack()
@@ -70,7 +106,19 @@ def register_view_all_open_ended(app, session):
         )
         logger.info("view-all-open-ended")
 
+
 def register_search_action(app, session):
+    """
+    Handles the Slack option "search_action"
+
+    Filters through the search bar inside of history.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: SQLAlchemy session.
+    :returns: An updated search.
+    """
     @app.options("search_action")
     def handle_search_action(ack, body):
         user_input = body.get("value", "")
@@ -90,7 +138,19 @@ def register_search_action(app, session):
         ]
         ack(options=options)
 
+
 def register_show_search_action(app, session):
+    """
+    Handles the Slack action "search_action"
+
+    Opens a modal for the user that displays the results of their selected poll.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: SQLAlchemy session.
+    :returns: A modal.
+    """
     @app.action("search_action")
     def handle_show_search_action(client, ack, body, logger):
         ack()
@@ -113,6 +173,17 @@ def register_show_search_action(app, session):
 
 
 def register_sort_action(app, session):
+    """
+    Handles the Slack action "sort_action"
+
+    Sorts through the history based on the user's choice.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: SQLAlchemy session.
+    :returns: An updated history modal
+    """
     @app.action("sort_action")
     def handle_sort_action(ack, body, client):
         ack()
@@ -129,7 +200,19 @@ def register_sort_action(app, session):
             view=updated_modal
         )
 
+
 def register_close_poll(app, session):
+    """
+    Handles the Slack action "close-poll"
+
+    Closes the poll that the user selected.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: SQLAlchemy session.
+    :returns: A deleted poll.
+    """
     @app.action("close-poll")
     def handle_close_poll(client, ack, body, logger):
         ack()
@@ -172,7 +255,19 @@ def register_close_poll(app, session):
             ]
         )
 
+
 def register_begin_option_rating(app, session):
+    """
+    Handles the Slack action "rate-poll-options"
+
+    Opens a modal for the user, prompting them to rate options inside the closed poll.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: SQLAlchemy session.
+    :returns: A modal.
+    """
     @app.action("rate-poll-options")
     def handle_begin_option_rating(client, ack, body):
         ack()
@@ -186,9 +281,21 @@ def register_begin_option_rating(app, session):
             view=modal,
         )
 
+
 def register_create_option_rating(app, session):
+    """
+    Handles the Slack regex action "option_rated[1-5]"
+
+    Rates the options based on user input.
+
+    :param app: The Slack app.
+    :type app: Slack app.
+    :param session: A SQLAlchemy session object.
+    :type session: SQLAlchemy session.
+    :returns: New ratings for options.
+    """
     @app.action(re.compile("option_rated[1-5]"))
-    def handle_create_option_rating(client, ack, body, action, logger):
+    def handle_create_option_rating(ack, body, action):
         ack()
 
         user_id = body["user"]["id"]

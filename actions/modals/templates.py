@@ -1,8 +1,13 @@
 from generalservices import sort_polls
-from models import Poll, PollOption
+from models import Poll
 
 
 def open_template_types():
+    """
+    Prompts the user a choice between the different template options.
+
+    :returns: A modal.
+    """
     blocks = {
         "title": {
             "type": "plain_text",
@@ -46,7 +51,13 @@ def open_template_types():
     }
     return blocks
 
+
 def create_mc_template():
+    """
+    Creates a menu that allows the user to create a multiple-choice poll.
+
+    :returns: A modal.
+    """
     blocks = {
         "title": {
             "type": "plain_text",
@@ -126,7 +137,13 @@ def create_mc_template():
     }
     return blocks
 
+
 def create_oe_template():
+    """
+    Creates a menu that allows the user to create an open-ended poll.
+
+    :returns: A modal.
+    """
     blocks = {
         "type": "modal",
         "callback_id": "oe-template-created",
@@ -201,7 +218,17 @@ def create_oe_template():
     }
     return blocks
 
+
 def show_all_templates(session, sort_by="newest"):
+    """
+    Shows all previously created templates.
+
+    :param session: The sqlalchemy session object.
+    :type session: sqlalchemy.orm.session.Session
+    :param sort_by: What the user wants to sort by.
+    :type sort_by: str
+    :returns: A modal.
+    """
     modal_blocks = []
 
     polls = session.query(Poll).filter_by(is_template=True).all()

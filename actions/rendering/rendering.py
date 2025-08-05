@@ -1,4 +1,11 @@
 def render_multiple_choice(poll):
+    """
+    Renders the multiple choice poll.
+
+    :param poll: The poll to be rendered.
+    :type poll: Poll.
+    :returns: A slack block object.
+    """
     button_elements = []
     blocks = [
         {
@@ -16,23 +23,23 @@ def render_multiple_choice(poll):
             "type": "input",
             "element": {
                 "type": "static_select",
-				"placeholder": {
-					"type": "plain_text",
-					"text": "Select options",
-					"emoji": True
-            },
-            "options": [
-                {
-                    "text": {
-                        "type": "plain_text",
-                        "text": option.text if hasattr(option, 'text') else str(option),
-                        "emoji": True
-                    },
-                    "value": str(i)
-                }
-                for i, option in enumerate(poll.options)
-            ],
-            "action_id": "poll_option_select"
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Select options",
+                    "emoji": True
+                },
+                "options": [
+                    {
+                        "text": {
+                            "type": "plain_text",
+                            "text": option.text if hasattr(option, 'text') else str(option),
+                            "emoji": True
+                        },
+                        "value": str(i)
+                    }
+                    for i, option in enumerate(poll.options)
+                ],
+                "action_id": "poll_option_select"
             },
             "label": {
                 "type": "plain_text",
@@ -102,7 +109,15 @@ def render_multiple_choice(poll):
 
     return blocks
 
+
 def render_open_ended(poll):
+    """
+    Renders the open-ended poll.
+
+    :param poll: The poll to be rendered.
+    :type poll: Poll.
+    :returns: A slack block object.
+    """
     button_elements = []
     blocks = [
         {
